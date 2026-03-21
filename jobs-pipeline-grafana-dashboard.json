@@ -1,0 +1,76 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_AIRFLOW",
+      "label": "Airflow DB",
+      "description": "Airflow metadata or jobs pipeline database",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "title": "Jobs Pipeline Overview",
+  "tags": ["airflow", "jobs", "pipeline"],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "table",
+      "title": "All Jobs",
+      "datasource": "${DS_AIRFLOW}",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT id, title, company, location, source, posted_date, scraped_at, is_active FROM jobs ORDER BY scraped_at DESC LIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "type": "stat",
+      "title": "Active Jobs Count",
+      "datasource": "${DS_AIRFLOW}",
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT COUNT(*) AS active_jobs FROM jobs WHERE is_active = 1;",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 10}
+    },
+    {
+      "type": "stat",
+      "title": "Jobs Scraped Today",
+      "datasource": "${DS_AIRFLOW}",
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT COUNT(*) AS jobs_today FROM jobs WHERE DATE(scraped_at) = CURRENT_DATE;",
+          "refId": "C"
+        }
+      ],
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 10}
+    },
+    {
+      "type": "table",
+      "title": "Scrape Logs",
+      "datasource": "${DS_AIRFLOW}",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT id, source, status, jobs_found, jobs_new, jobs_updated, started_at, finished_at FROM scrape_logs ORDER BY started_at DESC LIMIT 50;",
+          "refId": "D"
+        }
+      ],
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 14}
+    }
+  ]
+}

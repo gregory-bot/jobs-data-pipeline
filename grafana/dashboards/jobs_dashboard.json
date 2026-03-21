@@ -1,0 +1,173 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Jobs Pipeline Monitoring Dashboard",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "title": "Total Active Jobs",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) as total FROM jobs WHERE is_active = true;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "Jobs by Source",
+      "type": "piechart",
+      "targets": [
+        {
+          "rawSql": "SELECT source, COUNT(*) as count FROM jobs WHERE is_active = true GROUP BY source ORDER BY count DESC;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 },
+      "id": 3,
+      "title": "Jobs Scraped Today",
+      "type": "stat",
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) as today FROM jobs WHERE scraped_at >= CURRENT_DATE;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 18, "x": 0, "y": 8 },
+      "id": 4,
+      "title": "Jobs Scraped Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "rawSql": "SELECT date_trunc('day', scraped_at) as time, source, COUNT(*) as count FROM jobs WHERE scraped_at >= NOW() - INTERVAL '30 days' GROUP BY time, source ORDER BY time;",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 18, "x": 0, "y": 16 },
+      "id": 5,
+      "title": "Recent Scrape Logs",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT source, status, jobs_found, jobs_new, jobs_updated, started_at, finished_at, error_message FROM scrape_logs ORDER BY started_at DESC LIMIT 20;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 22 },
+      "id": 6,
+      "title": "Jobs by Location (Top 10)",
+      "type": "barchart",
+      "targets": [
+        {
+          "rawSql": "SELECT COALESCE(location, 'Unknown') as location, COUNT(*) as count FROM jobs WHERE is_active = true GROUP BY location ORDER BY count DESC LIMIT 10;",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 22 },
+      "id": 7,
+      "title": "Remote vs On-site",
+      "type": "piechart",
+      "targets": [
+        {
+          "rawSql": "SELECT CASE WHEN remote THEN 'Remote' ELSE 'On-site' END as type, COUNT(*) as count FROM jobs WHERE is_active = true GROUP BY remote;",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["jobs", "pipeline", "monitoring"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "title": "Jobs Pipeline Dashboard",
+  "uid": "jobs-pipeline-dashboard"
+}

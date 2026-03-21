@@ -1,0 +1,21 @@
+.env
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+airflow-venv/
+
+# Python builds
+*.egg-info/
+dist/
+build/
+
+# Airflow
+logs/
+airflow-data/
+*.db
+
+# OS
+.DS_Store
