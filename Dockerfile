@@ -20,4 +20,4 @@ ENV PYTHONPATH="/opt/airflow:${PYTHONPATH}"
 ENV AIRFLOW_HOME="/opt/airflow"
 
 # Default command to run FastAPI app
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "10000"]
