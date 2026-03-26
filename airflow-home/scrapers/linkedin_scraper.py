@@ -41,7 +41,6 @@ class LinkedInScraper(BaseScraper):
 
             job_cards = soup.find_all("div", class_=re.compile(r"base-card|job-search-card"))
             if not job_cards:
-                # Try alternate selectors
                 job_cards = soup.find_all("li", class_=re.compile(r"result-card"))
 
             if not job_cards:
