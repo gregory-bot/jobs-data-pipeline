@@ -63,10 +63,23 @@ jobs-pipeline/
 
 ## Quick Start
 
+
 ### 1. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
+
+### 1b. Initialize Airflow Database (required for first-time setup or after config changes)
+**Local:**
+```bash
+airflow db init
+```
+**Render:**
+Add a one-time Render shell command or deploy hook:
+```bash
+airflow db init
+```
+This must be run with Airflow version 2.8.2.
 
 ### 2. Test database connection
 ```bash
