@@ -1,3 +1,5 @@
+# Expose Airflow webserver port for Render
+EXPOSE 8080
 FROM python:3.11-slim
 
 WORKDIR /opt/airflow
