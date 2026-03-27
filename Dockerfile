@@ -1,5 +1,4 @@
-# Expose Airflow webserver port for Render
-EXPOSE 8080
+
 FROM python:3.11-slim
 
 WORKDIR /opt/airflow
@@ -21,5 +20,10 @@ COPY . .
 ENV PYTHONPATH="/opt/airflow/airflow-home:${PYTHONPATH}"
 ENV AIRFLOW_HOME="/opt/airflow"
 
-# Default command to run FastAPI app
+
+# Expose Airflow webserver port for Render
+EXPOSE 8080
+
+# Default command to run Airflow webserver
+# (You may need to override this in Render to: airflow webserver)
 CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "10000"]
