@@ -1,42 +1,43 @@
-"""
-Airflow DAG: Daily Job Scraping Pipeline
-Scheduled to run at 2:00 PM EAT (11:00 AM UTC) daily.
-"""
-import os
-import sys
-from datetime import datetime, timedelta
-
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.operators.email import EmailOperator
-
-# ============================================
-# CRITICAL: Ensure project root is in sys.path
-# ============================================
-# Get absolute path to the directory containing this DAG file
-DAG_DIR = os.path.dirname(os.path.abspath(__file__))
-# Project root is one level up from DAG directory
-PROJECT_ROOT = os.path.dirname(DAG_DIR)
-
-# Add project root to sys.path so Python can find our modules
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-# Also add the DAG directory itself in case modules are there
-if DAG_DIR not in sys.path:
-    sys.path.insert(0, DAG_DIR)
-
-# ============================================
-# DAG Configuration
-# ============================================
-default_args = {
-    "owner": "jobs-pipeline",
-    "depends_on_past": False,
-    "email_on_failure": False,
-    "email_on_retry": False,
-    "retries": 2,
-    "retry_delay": timedelta(minutes=5),
-}
+# --- Temporarily disabled for Render startup troubleshooting ---
+# """
+# Airflow DAG: Daily Job Scraping Pipeline
+# Scheduled to run at 2:00 PM EAT (11:00 AM UTC) daily.
+# """
+# import os
+# import sys
+# from datetime import datetime, timedelta
+#
+# from airflow import DAG
+# from airflow.operators.python import PythonOperator
+# from airflow.operators.email import EmailOperator
+#
+# # ============================================
+# # CRITICAL: Ensure project root is in sys.path
+# # ============================================
+# # Get absolute path to the directory containing this DAG file
+# DAG_DIR = os.path.dirname(os.path.abspath(__file__))
+# # Project root is one level up from DAG directory
+# PROJECT_ROOT = os.path.dirname(DAG_DIR)
+#
+# # Add project root to sys.path so Python can find our modules
+# if PROJECT_ROOT not in sys.path:
+#     sys.path.insert(0, PROJECT_ROOT)
+#
+# # Also add the DAG directory itself in case modules are there
+# if DAG_DIR not in sys.path:
+#     sys.path.insert(0, DAG_DIR)
+#
+# # ============================================
+# # DAG Configuration
+# # ============================================
+# default_args = {
+#     "owner": "jobs-pipeline",
+#     "depends_on_past": False,
+#     "email_on_failure": False,
+#     "email_on_retry": False,
+#     "retries": 2,
+#     "retry_delay": timedelta(minutes=5),
+# }
 
 dag = DAG(
     "daily_job_scraping",
