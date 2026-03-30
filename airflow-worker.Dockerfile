@@ -6,13 +6,13 @@ ENV AIRFLOW_HOME=/opt/airflow
 WORKDIR /opt/airflow
 
 # Copy your Airflow DAGs and config
-COPY airflow-home/dags ./dags
-COPY airflow-home/config ./config
-COPY airflow-home/database ./database
-COPY airflow-home/airflow.cfg ./airflow.cfg
+COPY airflow_home/dags ./dags
+COPY airflow_home/config ./config
+COPY airflow_home/database ./database
+COPY airflow_home/airflow.cfg ./airflow.cfg
 
 # (Optional) Copy any custom plugins or scripts
-# COPY airflow-home/plugins ./plugins
+# COPY airflow_home/plugins ./plugins
 
 # Install any extra Python dependencies (if needed)
 # COPY requirements.txt ./

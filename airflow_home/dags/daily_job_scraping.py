@@ -62,35 +62,35 @@ def init_database():
         raise
 
 def scrape_linkedin(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("linkedin", search_query="software developer", location="Kenya", max_pages=3)
 
 def scrape_myjobsinkenya(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("myjobsinkenya", max_pages=5)
 
 def scrape_brightermonday(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("brightermonday", max_pages=5)
 
 def scrape_indeed(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("indeed", search_query="", location="Kenya", max_pages=3)
 
 def scrape_glassdoor(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("glassdoor", search_query="software", location="Kenya", max_pages=2)
 
 def scrape_fuzu(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("fuzu", max_pages=5)
 
 def scrape_google_search(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("google_search", search_query="jobs hiring", location="Kenya", max_pages=2)
 
 def scrape_adzuna(**kwargs):
-    from scrapers.runner import run_scraper
+    from airflow_home.scrapers.runner import run_scraper
     return run_scraper("adzuna", search_query="software", location="Kenya", max_pages=3)
 
 def deactivate_old_jobs(**kwargs):

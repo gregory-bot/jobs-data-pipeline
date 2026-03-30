@@ -1,0 +1,399 @@
+2026-03-30 10:38:04,722 - __main__ - INFO - ==================================================
+2026-03-30 10:38:04,723 - __main__ - INFO - Starting full job scrape
+2026-03-30 10:38:04,724 - __main__ - INFO - ==================================================
+2026-03-30 10:38:13,208 - __main__ - INFO - Database tables verified/created
+2026-03-30 10:38:17,472 - airflow_home.scrapers.runner - INFO - Starting scrape: linkedin
+2026-03-30 10:38:18,777 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 1: found 28 cards
+2026-03-30 10:38:21,999 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 2: found 28 cards
+2026-03-30 10:38:25,356 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 3: found 28 cards
+2026-03-30 10:38:28,893 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 4: found 28 cards
+2026-03-30 10:38:32,268 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 5: found 28 cards
+2026-03-30 10:38:34,270 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Total jobs scraped: 140
+2026-03-30 10:38:34,276 - airflow_home.transformers.cleaner - INFO - Cleaned 140 jobs from 140 raw jobs
+2026-03-30 10:39:37,654 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'linkedin', 'status': 'success', 'jobs_found': 140, 'jobs_cleaned': 140, 'jobs_new': 0, 'jobs_updated': 140}
+2026-03-30 10:39:39,325 - airflow_home.scrapers.runner - INFO - Starting scrape: myjobsinkenya
+2026-03-30 10:39:39,871 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 1: found 12 cards
+2026-03-30 10:39:42,140 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 2: found 12 cards
+2026-03-30 10:39:44,462 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 3: found 12 cards
+2026-03-30 10:39:46,762 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 4: found 12 cards
+2026-03-30 10:39:49,053 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 5: found 12 cards
+2026-03-30 10:39:50,457 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Total jobs scraped: 60
+2026-03-30 10:39:50,461 - airflow_home.transformers.cleaner - INFO - Cleaned 60 jobs from 60 raw jobs
+2026-03-30 10:40:20,681 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'myjobsinkenya', 'status': 'success', 'jobs_found': 60, 'jobs_cleaned': 60, 'jobs_new': 0, 'jobs_updated': 60}
+2026-03-30 10:40:22,372 - airflow_home.scrapers.runner - INFO - Starting scrape: brightermonday
+2026-03-30 10:40:23,099 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 1: found 16 cards
+2026-03-30 10:40:25,626 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 2: found 16 cards
+2026-03-30 10:40:28,073 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 3: found 16 cards
+2026-03-30 10:40:30,605 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 4: found 16 cards
+2026-03-30 10:40:33,020 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 5: found 16 cards
+2026-03-30 10:40:35,021 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Total jobs scraped: 80
+2026-03-30 10:40:35,027 - airflow_home.transformers.cleaner - INFO - Cleaned 80 jobs from 80 raw jobs
+2026-03-30 10:41:10,231 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'brightermonday', 'status': 'success', 'jobs_found': 80, 'jobs_cleaned': 80, 'jobs_new': 0, 'jobs_updated': 80}
+2026-03-30 10:41:11,759 - airflow_home.scrapers.runner - INFO - Starting scrape: indeed
+2026-03-30 10:41:12,135 - airflow_home.scrapers.base_scraper - ERROR - [indeed] Failed to fetch https://www.indeed.com/jobs: 403 Client Error: Forbidden for url: https://www.indeed.com/jobs?q=&l=Kenya&start=0&fromage=7
+2026-03-30 10:41:12,137 - airflow_home.scrapers.indeed_scraper - INFO - [Indeed] Total jobs scraped: 0
+2026-03-30 10:41:12,142 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:41:14,107 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'indeed', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:41:15,733 - airflow_home.scrapers.runner - INFO - Starting scrape: glassdoor
+2026-03-30 10:41:16,149 - airflow_home.scrapers.base_scraper - ERROR - [glassdoor] Failed to fetch https://www.glassdoor.com/Job/jobs.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/jobs.htm?sc.keyword=software+engineer&locT=N&locKeyword=Kenya&p=1
+2026-03-30 10:41:16,151 - airflow_home.scrapers.glassdoor_scraper - INFO - [Glassdoor] Total jobs scraped: 0
+2026-03-30 10:41:16,152 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:41:18,799 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'glassdoor', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:41:20,430 - airflow_home.scrapers.runner - INFO - Starting scrape: fuzu
+2026-03-30 10:41:20,701 - airflow_home.scrapers.base_scraper - ERROR - [fuzu] Failed to fetch https://www.fuzu.com/kenya/job: 403 Client Error: Forbidden for url: https://www.fuzu.com/kenya/job?page=1
+2026-03-30 10:41:20,702 - airflow_home.scrapers.fuzu_scraper - INFO - [Fuzu] Total jobs scraped: 0
+2026-03-30 10:41:20,703 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:41:23,180 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'fuzu', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:41:24,648 - airflow_home.scrapers.runner - INFO - Starting scrape: google_search
+2026-03-30 10:41:24,788 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] linkedin.com/jobs: found 0 results
+2026-03-30 10:41:28,130 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] brightermonday.co.ke: found 0 results
+2026-03-30 10:41:31,460 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] indeed.com: found 0 results
+2026-03-30 10:41:34,739 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] glassdoor.com: found 0 results
+2026-03-30 10:41:38,385 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kariuki.co.ke: found 0 results
+2026-03-30 10:41:41,714 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] jobwebkenya.com: found 0 results
+2026-03-30 10:41:45,023 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] corporatestaffing.co.ke: found 0 results
+2026-03-30 10:41:48,369 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] summitrecruitment-search.com: found 0 results
+2026-03-30 10:41:51,707 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kenyajob.com: found 0 results
+2026-03-30 10:41:54,709 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] Total jobs found: 0
+2026-03-30 10:41:54,710 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:42:09,547 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'google_search', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:42:12,448 - airflow_home.scrapers.runner - INFO - Starting scrape: adzuna
+2026-03-30 10:42:12,450 - airflow_home.scrapers.adzuna_api_scraper - WARNING - [Adzuna] No API keys configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY.
+2026-03-30 10:42:12,452 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:42:27,208 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'adzuna', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:42:27,210 - airflow_home.scrapers.runner - INFO - All scrapers complete. Total jobs found: 280
+2026-03-30 10:42:27,211 - __main__ - ERROR - Full scrape failed: 'list' object has no attribute 'items'
+2026-03-30 10:45:02,288 - __main__ - INFO - ==================================================
+2026-03-30 10:45:02,288 - __main__ - INFO - Starting full job scrape
+2026-03-30 10:45:02,289 - __main__ - INFO - ==================================================
+2026-03-30 10:45:08,326 - __main__ - INFO - Database tables verified/created
+2026-03-30 10:45:11,004 - airflow_home.scrapers.runner - INFO - Starting scrape: linkedin
+2026-03-30 10:45:12,116 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 1: found 28 cards
+2026-03-30 10:45:15,478 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 2: found 28 cards
+2026-03-30 10:45:18,849 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 3: found 28 cards
+2026-03-30 10:45:23,835 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 4: found 28 cards
+2026-03-30 10:45:27,183 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 5: found 28 cards
+2026-03-30 10:45:29,186 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Total jobs scraped: 140
+2026-03-30 10:45:29,191 - airflow_home.transformers.cleaner - INFO - Cleaned 140 jobs from 140 raw jobs
+2026-03-30 10:46:15,465 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'linkedin', 'status': 'success', 'jobs_found': 140, 'jobs_cleaned': 140, 'jobs_new': 0, 'jobs_updated': 140}
+2026-03-30 10:46:16,698 - airflow_home.scrapers.runner - INFO - Starting scrape: myjobsinkenya
+2026-03-30 10:46:17,263 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 1: found 12 cards
+2026-03-30 10:46:19,517 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 2: found 12 cards
+2026-03-30 10:46:21,863 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 3: found 12 cards
+2026-03-30 10:46:24,150 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 4: found 12 cards
+2026-03-30 10:46:26,454 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 5: found 12 cards
+2026-03-30 10:46:28,463 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Total jobs scraped: 60
+2026-03-30 10:46:28,467 - airflow_home.transformers.cleaner - INFO - Cleaned 60 jobs from 60 raw jobs
+2026-03-30 10:46:49,604 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'myjobsinkenya', 'status': 'success', 'jobs_found': 60, 'jobs_cleaned': 60, 'jobs_new': 0, 'jobs_updated': 60}
+2026-03-30 10:46:50,850 - airflow_home.scrapers.runner - INFO - Starting scrape: brightermonday
+2026-03-30 10:46:51,666 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 1: found 16 cards
+2026-03-30 10:46:54,062 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 2: found 16 cards
+2026-03-30 10:46:56,487 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 3: found 16 cards
+2026-03-30 10:46:58,916 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 4: found 16 cards
+2026-03-30 10:47:01,288 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 5: found 16 cards
+2026-03-30 10:47:03,290 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Total jobs scraped: 80
+2026-03-30 10:47:03,296 - airflow_home.transformers.cleaner - INFO - Cleaned 80 jobs from 80 raw jobs
+2026-03-30 10:47:31,396 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'brightermonday', 'status': 'success', 'jobs_found': 80, 'jobs_cleaned': 80, 'jobs_new': 0, 'jobs_updated': 80}
+2026-03-30 10:47:32,643 - airflow_home.scrapers.runner - INFO - Starting scrape: indeed
+2026-03-30 10:47:32,829 - airflow_home.scrapers.base_scraper - ERROR - [indeed] Failed to fetch https://www.indeed.com/jobs: 403 Client Error: Forbidden for url: https://www.indeed.com/jobs?q=&l=Kenya&start=0&fromage=7
+2026-03-30 10:47:32,830 - airflow_home.scrapers.indeed_scraper - INFO - [Indeed] Total jobs scraped: 0
+2026-03-30 10:47:32,831 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:47:34,414 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'indeed', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:47:35,666 - airflow_home.scrapers.runner - INFO - Starting scrape: glassdoor
+2026-03-30 10:47:35,883 - airflow_home.scrapers.base_scraper - ERROR - [glassdoor] Failed to fetch https://www.glassdoor.com/Job/jobs.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/jobs.htm?sc.keyword=software+engineer&locT=N&locKeyword=Kenya&p=1
+2026-03-30 10:47:35,885 - airflow_home.scrapers.glassdoor_scraper - INFO - [Glassdoor] Total jobs scraped: 0
+2026-03-30 10:47:35,886 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:47:37,743 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'glassdoor', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:47:39,009 - airflow_home.scrapers.runner - INFO - Starting scrape: fuzu
+2026-03-30 10:47:39,194 - airflow_home.scrapers.base_scraper - ERROR - [fuzu] Failed to fetch https://www.fuzu.com/kenya/job: 403 Client Error: Forbidden for url: https://www.fuzu.com/kenya/job?page=1
+2026-03-30 10:47:39,196 - airflow_home.scrapers.fuzu_scraper - INFO - [Fuzu] Total jobs scraped: 0
+2026-03-30 10:47:39,197 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:47:40,762 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'fuzu', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:47:41,955 - airflow_home.scrapers.runner - INFO - Starting scrape: google_search
+2026-03-30 10:47:42,480 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] linkedin.com/jobs: found 0 results
+2026-03-30 10:47:45,193 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] brightermonday.co.ke: found 0 results
+2026-03-30 10:47:48,486 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] indeed.com: found 0 results
+2026-03-30 10:47:51,787 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] glassdoor.com: found 0 results
+2026-03-30 10:47:55,100 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kariuki.co.ke: found 0 results
+2026-03-30 10:47:58,485 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] jobwebkenya.com: found 0 results
+2026-03-30 10:48:01,810 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] corporatestaffing.co.ke: found 0 results
+2026-03-30 10:48:05,141 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] summitrecruitment-search.com: found 0 results
+2026-03-30 10:48:08,456 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kenyajob.com: found 0 results
+2026-03-30 10:48:11,464 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] Total jobs found: 0
+2026-03-30 10:48:11,467 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:48:13,097 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'google_search', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:48:14,450 - airflow_home.scrapers.runner - INFO - Starting scrape: adzuna
+2026-03-30 10:48:14,452 - airflow_home.scrapers.adzuna_api_scraper - WARNING - [Adzuna] No API keys configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY.
+2026-03-30 10:48:14,454 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:48:15,964 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'adzuna', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:48:15,965 - airflow_home.scrapers.runner - INFO - All scrapers complete. Total jobs found: 280
+2026-03-30 10:48:15,967 - __main__ - WARNING - No data from linkedin
+2026-03-30 10:48:15,979 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:15,988 - __main__ - WARNING - No data from myjobsinkenya
+2026-03-30 10:48:15,992 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:15,997 - __main__ - WARNING - No data from brightermonday
+2026-03-30 10:48:16,003 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:16,007 - __main__ - WARNING - No data from indeed
+2026-03-30 10:48:16,010 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:16,012 - __main__ - WARNING - No data from glassdoor
+2026-03-30 10:48:16,014 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:16,016 - __main__ - WARNING - No data from fuzu
+2026-03-30 10:48:16,017 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:16,018 - __main__ - WARNING - No data from google_search
+2026-03-30 10:48:16,020 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:16,021 - __main__ - WARNING - No data from adzuna
+2026-03-30 10:48:16,021 - __main__ - ERROR - Error logging scrape: 'completed_at' is an invalid keyword argument for ScrapeLog
+2026-03-30 10:48:16,023 - __main__ - ERROR - Error deactivating old jobs: type object 'Job' has no attribute 'created_at'
+2026-03-30 10:48:16,024 - __main__ - ERROR - Full scrape failed: type object 'Job' has no attribute 'created_at'
+2026-03-30 10:51:51,974 - __main__ - INFO - ==================================================
+2026-03-30 10:51:51,975 - __main__ - INFO - Starting full job scrape
+2026-03-30 10:51:51,976 - __main__ - INFO - ==================================================
+2026-03-30 10:52:09,924 - __main__ - INFO - Database tables verified/created
+2026-03-30 10:52:16,357 - airflow_home.scrapers.runner - INFO - Starting scrape: linkedin
+2026-03-30 10:52:17,651 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 1: found 28 cards
+2026-03-30 10:52:21,930 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 2: found 28 cards
+2026-03-30 10:52:25,277 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 3: found 28 cards
+2026-03-30 10:52:28,723 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 4: found 28 cards
+2026-03-30 10:52:31,361 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 5: found 28 cards
+2026-03-30 10:52:33,363 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Total jobs scraped: 140
+2026-03-30 10:52:33,368 - airflow_home.transformers.cleaner - INFO - Cleaned 140 jobs from 140 raw jobs
+2026-03-30 10:53:16,619 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'linkedin', 'status': 'success', 'jobs_found': 140, 'jobs_cleaned': 140, 'jobs_new': 0, 'jobs_updated': 140}
+2026-03-30 10:53:17,858 - airflow_home.scrapers.runner - INFO - Starting scrape: myjobsinkenya
+2026-03-30 10:53:18,406 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 1: found 12 cards
+2026-03-30 10:53:20,803 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 2: found 12 cards
+2026-03-30 10:53:23,077 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 3: found 12 cards
+2026-03-30 10:53:25,345 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 4: found 12 cards
+2026-03-30 10:53:27,605 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 5: found 12 cards
+2026-03-30 10:53:29,607 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Total jobs scraped: 60
+2026-03-30 10:53:29,610 - airflow_home.transformers.cleaner - INFO - Cleaned 60 jobs from 60 raw jobs
+2026-03-30 10:53:49,493 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'myjobsinkenya', 'status': 'success', 'jobs_found': 60, 'jobs_cleaned': 60, 'jobs_new': 0, 'jobs_updated': 60}
+2026-03-30 10:53:50,748 - airflow_home.scrapers.runner - INFO - Starting scrape: brightermonday
+2026-03-30 10:53:51,556 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 1: found 16 cards
+2026-03-30 10:53:54,044 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 2: found 16 cards
+2026-03-30 10:53:56,554 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 3: found 16 cards
+2026-03-30 10:53:59,065 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 4: found 16 cards
+2026-03-30 10:54:01,504 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 5: found 16 cards
+2026-03-30 10:54:03,507 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Total jobs scraped: 80
+2026-03-30 10:54:03,511 - airflow_home.transformers.cleaner - INFO - Cleaned 80 jobs from 80 raw jobs
+2026-03-30 10:54:28,910 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'brightermonday', 'status': 'success', 'jobs_found': 80, 'jobs_cleaned': 80, 'jobs_new': 0, 'jobs_updated': 80}
+2026-03-30 10:54:30,267 - airflow_home.scrapers.runner - INFO - Starting scrape: indeed
+2026-03-30 10:54:30,435 - airflow_home.scrapers.base_scraper - ERROR - [indeed] Failed to fetch https://www.indeed.com/jobs: 403 Client Error: Forbidden for url: https://www.indeed.com/jobs?q=&l=Kenya&start=0&fromage=7
+2026-03-30 10:54:30,436 - airflow_home.scrapers.indeed_scraper - INFO - [Indeed] Total jobs scraped: 0
+2026-03-30 10:54:30,438 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:54:31,955 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'indeed', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:54:33,190 - airflow_home.scrapers.runner - INFO - Starting scrape: glassdoor
+2026-03-30 10:54:33,386 - airflow_home.scrapers.base_scraper - ERROR - [glassdoor] Failed to fetch https://www.glassdoor.com/Job/jobs.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/jobs.htm?sc.keyword=software+engineer&locT=N&locKeyword=Kenya&p=1
+2026-03-30 10:54:33,388 - airflow_home.scrapers.glassdoor_scraper - INFO - [Glassdoor] Total jobs scraped: 0
+2026-03-30 10:54:33,389 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:54:34,922 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'glassdoor', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:54:36,067 - airflow_home.scrapers.runner - INFO - Starting scrape: fuzu
+2026-03-30 10:54:35,677 - airflow_home.scrapers.base_scraper - ERROR - [fuzu] Failed to fetch https://www.fuzu.com/kenya/job: 403 Client Error: Forbidden for url: https://www.fuzu.com/kenya/job?page=1
+2026-03-30 10:54:35,679 - airflow_home.scrapers.fuzu_scraper - INFO - [Fuzu] Total jobs scraped: 0
+2026-03-30 10:54:35,680 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:54:37,118 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'fuzu', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:54:38,424 - airflow_home.scrapers.runner - INFO - Starting scrape: google_search
+2026-03-30 10:54:38,976 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] linkedin.com/jobs: found 0 results
+2026-03-30 10:54:42,334 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] brightermonday.co.ke: found 0 results
+2026-03-30 10:54:45,688 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] indeed.com: found 0 results
+2026-03-30 10:54:49,076 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] glassdoor.com: found 0 results
+2026-03-30 10:54:52,394 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kariuki.co.ke: found 0 results
+2026-03-30 10:54:55,756 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] jobwebkenya.com: found 0 results
+2026-03-30 10:54:59,096 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] corporatestaffing.co.ke: found 0 results
+2026-03-30 10:55:02,439 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] summitrecruitment-search.com: found 0 results
+2026-03-30 10:55:05,777 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kenyajob.com: found 0 results
+2026-03-30 10:55:08,129 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] Total jobs found: 0
+2026-03-30 10:55:08,131 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:55:09,537 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'google_search', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:55:10,624 - airflow_home.scrapers.runner - INFO - Starting scrape: adzuna
+2026-03-30 10:55:10,627 - airflow_home.scrapers.adzuna_api_scraper - WARNING - [Adzuna] No API keys configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY.
+2026-03-30 10:55:10,628 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 10:55:11,985 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'adzuna', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 10:55:11,988 - airflow_home.scrapers.runner - INFO - All scrapers complete. Total jobs found: 280
+2026-03-30 10:55:11,992 - __main__ - WARNING - No data from linkedin
+2026-03-30 10:55:11,993 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:11,996 - __main__ - WARNING - No data from myjobsinkenya
+2026-03-30 10:55:11,997 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,000 - __main__ - WARNING - No data from brightermonday
+2026-03-30 10:55:12,003 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,006 - __main__ - WARNING - No data from indeed
+2026-03-30 10:55:12,008 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,011 - __main__ - WARNING - No data from glassdoor
+2026-03-30 10:55:12,012 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,014 - __main__ - WARNING - No data from fuzu
+2026-03-30 10:55:12,017 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,020 - __main__ - WARNING - No data from google_search
+2026-03-30 10:55:12,023 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,025 - __main__ - WARNING - No data from adzuna
+2026-03-30 10:55:12,027 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,029 - __main__ - ERROR - Error deactivating old jobs: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:55:12,031 - __main__ - ERROR - Full scrape failed: type object 'datetime.datetime' has no attribute 'UTC'
+2026-03-30 10:58:04,929 - __main__ - INFO - ==================================================
+2026-03-30 10:58:04,930 - __main__ - INFO - Starting full job scrape
+2026-03-30 10:58:04,931 - __main__ - INFO - ==================================================
+2026-03-30 10:58:10,633 - __main__ - INFO - Database tables verified/created
+2026-03-30 10:58:13,366 - airflow_home.scrapers.runner - INFO - Starting scrape: linkedin
+2026-03-30 10:58:14,850 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 1: found 28 cards
+2026-03-30 10:58:17,559 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 2: found 28 cards
+2026-03-30 10:58:20,838 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 3: found 28 cards
+2026-03-30 10:58:24,227 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 4: found 28 cards
+2026-03-30 10:58:27,624 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 5: found 28 cards
+2026-03-30 10:58:29,627 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Total jobs scraped: 140
+2026-03-30 10:58:29,632 - airflow_home.transformers.cleaner - INFO - Cleaned 140 jobs from 140 raw jobs
+2026-03-30 10:59:13,358 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'linkedin', 'status': 'success', 'jobs_found': 140, 'jobs_cleaned': 140, 'jobs_new': 0, 'jobs_updated': 140}
+2026-03-30 10:59:14,615 - airflow_home.scrapers.runner - INFO - Starting scrape: myjobsinkenya
+2026-03-30 10:59:15,161 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 1: found 12 cards
+2026-03-30 10:59:17,431 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 2: found 12 cards
+2026-03-30 10:59:19,758 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 3: found 12 cards
+2026-03-30 10:59:21,544 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 4: found 12 cards
+2026-03-30 10:59:23,820 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 5: found 12 cards
+2026-03-30 10:59:25,828 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Total jobs scraped: 60
+2026-03-30 10:59:25,831 - airflow_home.transformers.cleaner - INFO - Cleaned 60 jobs from 60 raw jobs
+2026-03-30 10:59:46,264 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'myjobsinkenya', 'status': 'success', 'jobs_found': 60, 'jobs_cleaned': 60, 'jobs_new': 0, 'jobs_updated': 60}
+2026-03-30 10:59:47,329 - airflow_home.scrapers.runner - INFO - Starting scrape: brightermonday
+2026-03-30 10:59:48,128 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 1: found 16 cards
+2026-03-30 10:59:50,514 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 2: found 16 cards
+2026-03-30 10:59:52,277 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 3: found 16 cards
+2026-03-30 10:59:54,782 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 4: found 16 cards
+2026-03-30 10:59:57,299 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 5: found 16 cards
+2026-03-30 10:59:59,304 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Total jobs scraped: 80
+2026-03-30 10:59:59,309 - airflow_home.transformers.cleaner - INFO - Cleaned 80 jobs from 80 raw jobs
+2026-03-30 11:00:24,932 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'brightermonday', 'status': 'success', 'jobs_found': 80, 'jobs_cleaned': 80, 'jobs_new': 0, 'jobs_updated': 80}
+2026-03-30 11:00:26,179 - airflow_home.scrapers.runner - INFO - Starting scrape: indeed
+2026-03-30 11:00:26,341 - airflow_home.scrapers.base_scraper - ERROR - [indeed] Failed to fetch https://www.indeed.com/jobs: 403 Client Error: Forbidden for url: https://www.indeed.com/jobs?q=&l=Kenya&start=0&fromage=7
+2026-03-30 11:00:26,343 - airflow_home.scrapers.indeed_scraper - INFO - [Indeed] Total jobs scraped: 0
+2026-03-30 11:00:26,344 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:00:27,951 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'indeed', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:00:29,202 - airflow_home.scrapers.runner - INFO - Starting scrape: glassdoor
+2026-03-30 11:00:29,380 - airflow_home.scrapers.base_scraper - ERROR - [glassdoor] Failed to fetch https://www.glassdoor.com/Job/jobs.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/jobs.htm?sc.keyword=software+engineer&locT=N&locKeyword=Kenya&p=1
+2026-03-30 11:00:29,382 - airflow_home.scrapers.glassdoor_scraper - INFO - [Glassdoor] Total jobs scraped: 0
+2026-03-30 11:00:29,383 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:00:30,848 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'glassdoor', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:00:31,930 - airflow_home.scrapers.runner - INFO - Starting scrape: fuzu
+2026-03-30 11:00:32,100 - airflow_home.scrapers.base_scraper - ERROR - [fuzu] Failed to fetch https://www.fuzu.com/kenya/job: 403 Client Error: Forbidden for url: https://www.fuzu.com/kenya/job?page=1
+2026-03-30 11:00:32,101 - airflow_home.scrapers.fuzu_scraper - INFO - [Fuzu] Total jobs scraped: 0
+2026-03-30 11:00:32,102 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:00:33,619 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'fuzu', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:00:34,929 - airflow_home.scrapers.runner - INFO - Starting scrape: google_search
+2026-03-30 11:00:35,924 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] linkedin.com/jobs: found 0 results
+2026-03-30 11:00:39,618 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] brightermonday.co.ke: found 0 results
+2026-03-30 11:00:43,284 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] indeed.com: found 0 results
+2026-03-30 11:00:46,947 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] glassdoor.com: found 0 results
+2026-03-30 11:00:50,611 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kariuki.co.ke: found 0 results
+2026-03-30 11:00:54,157 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] jobwebkenya.com: found 0 results
+2026-03-30 11:00:57,418 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] corporatestaffing.co.ke: found 0 results
+2026-03-30 11:01:01,163 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] summitrecruitment-search.com: found 0 results
+2026-03-30 11:01:04,829 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kenyajob.com: found 0 results
+2026-03-30 11:01:07,834 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] Total jobs found: 0
+2026-03-30 11:01:07,836 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:01:09,198 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'google_search', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:01:10,312 - airflow_home.scrapers.runner - INFO - Starting scrape: adzuna
+2026-03-30 11:01:10,313 - airflow_home.scrapers.adzuna_api_scraper - WARNING - [Adzuna] No API keys configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY.
+2026-03-30 11:01:10,314 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:01:11,822 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'adzuna', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:01:11,824 - airflow_home.scrapers.runner - INFO - All scrapers complete. Total jobs found: 280
+2026-03-30 11:01:11,825 - __main__ - WARNING - No data from linkedin
+2026-03-30 11:01:11,826 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,828 - __main__ - WARNING - No data from myjobsinkenya
+2026-03-30 11:01:11,829 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,830 - __main__ - WARNING - No data from brightermonday
+2026-03-30 11:01:11,832 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,834 - __main__ - WARNING - No data from indeed
+2026-03-30 11:01:11,836 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,839 - __main__ - WARNING - No data from glassdoor
+2026-03-30 11:01:11,842 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,844 - __main__ - WARNING - No data from fuzu
+2026-03-30 11:01:11,845 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,846 - __main__ - WARNING - No data from google_search
+2026-03-30 11:01:11,847 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,848 - __main__ - WARNING - No data from adzuna
+2026-03-30 11:01:11,849 - __main__ - ERROR - Error logging scrape: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,850 - __main__ - ERROR - Error deactivating old jobs: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:01:11,850 - __main__ - ERROR - Full scrape failed: type object 'datetime.datetime' has no attribute 'timezone'
+2026-03-30 11:04:02,871 - __main__ - INFO - ==================================================
+2026-03-30 11:04:02,872 - __main__ - INFO - Starting full job scrape
+2026-03-30 11:04:02,873 - __main__ - INFO - ==================================================
+2026-03-30 11:04:08,343 - __main__ - INFO - Database tables verified/created
+2026-03-30 11:04:11,105 - airflow_home.scrapers.runner - INFO - Starting scrape: linkedin
+2026-03-30 11:04:12,385 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 1: found 28 cards
+2026-03-30 11:04:15,753 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 2: found 28 cards
+2026-03-30 11:04:18,991 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 3: found 28 cards
+2026-03-30 11:04:22,226 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 4: found 28 cards
+2026-03-30 11:04:25,401 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Page 5: found 28 cards
+2026-03-30 11:04:27,405 - airflow_home.scrapers.linkedin_scraper - INFO - [LinkedIn] Total jobs scraped: 140
+2026-03-30 11:04:27,411 - airflow_home.transformers.cleaner - INFO - Cleaned 140 jobs from 140 raw jobs
+2026-03-30 11:05:13,452 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'linkedin', 'status': 'success', 'jobs_found': 140, 'jobs_cleaned': 140, 'jobs_new': 0, 'jobs_updated': 140}
+2026-03-30 11:05:14,701 - airflow_home.scrapers.runner - INFO - Starting scrape: myjobsinkenya
+2026-03-30 11:05:15,244 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 1: found 12 cards
+2026-03-30 11:05:17,547 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 2: found 12 cards
+2026-03-30 11:05:19,941 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 3: found 12 cards
+2026-03-30 11:05:22,344 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 4: found 12 cards
+2026-03-30 11:05:24,745 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Page 5: found 12 cards
+2026-03-30 11:05:26,759 - airflow_home.scrapers.myjobsinkenya_scraper - INFO - [MyJobsInKenya] Total jobs scraped: 60
+2026-03-30 11:05:26,764 - airflow_home.transformers.cleaner - INFO - Cleaned 60 jobs from 60 raw jobs
+2026-03-30 11:05:48,044 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'myjobsinkenya', 'status': 'success', 'jobs_found': 60, 'jobs_cleaned': 60, 'jobs_new': 0, 'jobs_updated': 60}
+2026-03-30 11:05:49,358 - airflow_home.scrapers.runner - INFO - Starting scrape: brightermonday
+2026-03-30 11:05:50,530 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 1: found 16 cards
+2026-03-30 11:05:52,990 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 2: found 16 cards
+2026-03-30 11:05:55,497 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 3: found 16 cards
+2026-03-30 11:05:58,008 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 4: found 16 cards
+2026-03-30 11:06:00,517 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Page 5: found 16 cards
+2026-03-30 11:06:02,519 - airflow_home.scrapers.brightermonday_scraper - INFO - [BrighterMonday] Total jobs scraped: 80
+2026-03-30 11:06:02,524 - airflow_home.transformers.cleaner - INFO - Cleaned 80 jobs from 80 raw jobs
+2026-03-30 11:06:31,441 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'brightermonday', 'status': 'success', 'jobs_found': 80, 'jobs_cleaned': 80, 'jobs_new': 0, 'jobs_updated': 80}
+2026-03-30 11:06:32,737 - airflow_home.scrapers.runner - INFO - Starting scrape: indeed
+2026-03-30 11:06:32,910 - airflow_home.scrapers.base_scraper - ERROR - [indeed] Failed to fetch https://www.indeed.com/jobs: 403 Client Error: Forbidden for url: https://www.indeed.com/jobs?q=&l=Kenya&start=0&fromage=7
+2026-03-30 11:06:32,912 - airflow_home.scrapers.indeed_scraper - INFO - [Indeed] Total jobs scraped: 0
+2026-03-30 11:06:32,912 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:06:35,066 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'indeed', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:06:36,363 - airflow_home.scrapers.runner - INFO - Starting scrape: glassdoor
+2026-03-30 11:06:37,829 - airflow_home.scrapers.base_scraper - ERROR - [glassdoor] Failed to fetch https://www.glassdoor.com/Job/jobs.htm: 403 Client Error: Forbidden for url: https://www.glassdoor.com/Job/jobs.htm?sc.keyword=software+engineer&locT=N&locKeyword=Kenya&p=1
+2026-03-30 11:06:37,831 - airflow_home.scrapers.glassdoor_scraper - INFO - [Glassdoor] Total jobs scraped: 0
+2026-03-30 11:06:37,832 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:06:40,438 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'glassdoor', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:06:41,691 - airflow_home.scrapers.runner - INFO - Starting scrape: fuzu
+2026-03-30 11:06:41,990 - airflow_home.scrapers.base_scraper - ERROR - [fuzu] Failed to fetch https://www.fuzu.com/kenya/job: 403 Client Error: Forbidden for url: https://www.fuzu.com/kenya/job?page=1
+2026-03-30 11:06:41,992 - airflow_home.scrapers.fuzu_scraper - INFO - [Fuzu] Total jobs scraped: 0
+2026-03-30 11:06:41,992 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:06:43,674 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'fuzu', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:06:44,289 - airflow_home.scrapers.runner - INFO - Starting scrape: google_search
+2026-03-30 11:06:45,466 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] linkedin.com/jobs: found 0 results
+2026-03-30 11:06:49,163 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] brightermonday.co.ke: found 0 results
+2026-03-30 11:06:52,549 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] indeed.com: found 0 results
+2026-03-30 11:06:57,306 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] glassdoor.com: found 0 results
+2026-03-30 11:07:00,659 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kariuki.co.ke: found 0 results
+2026-03-30 11:07:04,060 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] jobwebkenya.com: found 0 results
+2026-03-30 11:07:07,383 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] corporatestaffing.co.ke: found 0 results
+2026-03-30 11:07:10,680 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] summitrecruitment-search.com: found 0 results
+2026-03-30 11:07:14,025 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] kenyajob.com: found 0 results
+2026-03-30 11:07:16,385 - airflow_home.scrapers.google_search_scraper - INFO - [GoogleSearch] Total jobs found: 0
+2026-03-30 11:07:16,388 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:07:18,435 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'google_search', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:07:19,574 - airflow_home.scrapers.runner - INFO - Starting scrape: adzuna
+2026-03-30 11:07:19,576 - airflow_home.scrapers.adzuna_api_scraper - WARNING - [Adzuna] No API keys configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY.
+2026-03-30 11:07:19,578 - airflow_home.transformers.cleaner - INFO - Cleaned 0 jobs from 0 raw jobs
+2026-03-30 11:07:21,092 - airflow_home.scrapers.runner - INFO - Scrape complete: {'source': 'adzuna', 'status': 'success', 'jobs_found': 0, 'jobs_cleaned': 0, 'jobs_new': 0, 'jobs_updated': 0}
+2026-03-30 11:07:21,094 - airflow_home.scrapers.runner - INFO - All scrapers complete. Total jobs found: 280
+2026-03-30 11:07:21,095 - __main__ - WARNING - No data from linkedin
+2026-03-30 11:07:22,399 - __main__ - INFO - Logged scrape result for linkedin: empty
+2026-03-30 11:07:22,400 - __main__ - WARNING - No data from myjobsinkenya
+2026-03-30 11:07:23,637 - __main__ - INFO - Logged scrape result for myjobsinkenya: empty
+2026-03-30 11:07:23,639 - __main__ - WARNING - No data from brightermonday
+2026-03-30 11:07:24,896 - __main__ - INFO - Logged scrape result for brightermonday: empty
+2026-03-30 11:07:24,898 - __main__ - WARNING - No data from indeed
+2026-03-30 11:07:26,145 - __main__ - INFO - Logged scrape result for indeed: empty
+2026-03-30 11:07:26,148 - __main__ - WARNING - No data from glassdoor
+2026-03-30 11:07:27,365 - __main__ - INFO - Logged scrape result for glassdoor: empty
+2026-03-30 11:07:27,367 - __main__ - WARNING - No data from fuzu
+2026-03-30 11:07:28,665 - __main__ - INFO - Logged scrape result for fuzu: empty
+2026-03-30 11:07:28,666 - __main__ - WARNING - No data from google_search
+2026-03-30 11:07:29,924 - __main__ - INFO - Logged scrape result for google_search: empty
+2026-03-30 11:07:29,926 - __main__ - WARNING - No data from adzuna
+2026-03-30 11:07:31,144 - __main__ - INFO - Logged scrape result for adzuna: empty
+2026-03-30 11:07:32,548 - __main__ - INFO - Deactivated 0 jobs older than 30 days
+2026-03-30 11:07:32,550 - __main__ - INFO - ==================================================
+2026-03-30 11:07:32,551 - __main__ - INFO - SCRAPE SUMMARY
+2026-03-30 11:07:32,552 - __main__ - INFO - ==================================================
+2026-03-30 11:07:32,553 - __main__ - INFO - Total jobs found: 0
+2026-03-30 11:07:32,554 - __main__ - INFO - New jobs added: 0
+2026-03-30 11:07:32,555 - __main__ - INFO - Jobs deactivated: 0
+2026-03-30 11:07:32,556 - __main__ - INFO - ==================================================

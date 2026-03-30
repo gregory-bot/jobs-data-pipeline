@@ -9,7 +9,7 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-from config.settings import settings
+from airflow_home.config.settings import settings
 
 logger = logging.getLogger(__name__)
 

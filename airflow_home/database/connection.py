@@ -3,7 +3,7 @@ Database connection and session management.
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from config.settings import settings
+from airflow_home.config.settings import settings
 
 engine = create_engine(
     settings.database_url,

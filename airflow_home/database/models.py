@@ -12,7 +12,7 @@ from sqlalchemy import (
     Float,
     Index,
 )
-from database.connection import Base
+from airflow_home.database.connection import Base
 
 
 class Job(Base):

@@ -8,7 +8,7 @@ import os
 from typing import Optional
 from datetime import datetime
 
-from scrapers.base_scraper import BaseScraper, JobData
+from airflow_home.scrapers.base_scraper import BaseScraper, JobData
 
 logger = logging.getLogger(__name__)
 

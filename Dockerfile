@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-ENV PYTHONPATH="/opt/airflow/airflow-home:${PYTHONPATH}"
+ENV PYTHONPATH="/opt/airflow/airflow_home:${PYTHONPATH}"
 ENV AIRFLOW_HOME="/opt/airflow"
 
 

@@ -7,7 +7,7 @@ import html
 import logging
 from typing import Optional
 
-from scrapers.base_scraper import JobData
+from airflow_home.scrapers.base_scraper import JobData
 
 logger = logging.getLogger(__name__)
 

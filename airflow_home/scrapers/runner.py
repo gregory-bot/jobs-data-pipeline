@@ -8,17 +8,17 @@ from typing import Optional
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from database.connection import SessionLocal, init_db
-from database.models import Job, ScrapeLog
-from scrapers.linkedin_scraper import LinkedInScraper
-from scrapers.myjobsinkenya_scraper import MyJobsInKenyaScraper
-from scrapers.brightermonday_scraper import BrighterMondayScraper
-from scrapers.indeed_scraper import IndeedScraper
-from scrapers.glassdoor_scraper import GlassdoorScraper
-from scrapers.fuzu_scraper import FuzuScraper
-from scrapers.google_search_scraper import GoogleJobsSearchScraper
-from scrapers.adzuna_api_scraper import AdzunaAPIScraper
-from transformers.cleaner import clean_jobs
+from airflow_home.database.connection import SessionLocal, init_db
+from airflow_home.database.models import Job, ScrapeLog
+from airflow_home.scrapers.linkedin_scraper import LinkedInScraper
+from airflow_home.scrapers.myjobsinkenya_scraper import MyJobsInKenyaScraper
+from airflow_home.scrapers.brightermonday_scraper import BrighterMondayScraper
+from airflow_home.scrapers.indeed_scraper import IndeedScraper
+from airflow_home.scrapers.glassdoor_scraper import GlassdoorScraper
+from airflow_home.scrapers.fuzu_scraper import FuzuScraper
+from airflow_home.scrapers.google_search_scraper import GoogleJobsSearchScraper
+from airflow_home.scrapers.adzuna_api_scraper import AdzunaAPIScraper
+from airflow_home.transformers.cleaner import clean_jobs
 
 logging.basicConfig(
     level=logging.INFO,
