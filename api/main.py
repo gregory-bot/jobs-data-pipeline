@@ -158,7 +158,7 @@ def list_jobs(
     query = db.query(Job).filter(Job.is_active == True)
 
     # Auto-filter out jobs with expired application deadlines
-    now = datetime.utcnow()
+    now = datetime.now()
     query = query.filter(
         (Job.application_deadline == None) | (Job.application_deadline >= now)
     )
@@ -193,7 +193,7 @@ def list_jobs(
     jobs = query.offset((page - 1) * per_page).limit(per_page).all()
 
     return PaginatedResponse(
-        jobs=[JobResponse.from_orm(j) for j in jobs],
+        jobs=[JobResponse.model_validate(j) for j in jobs],
         total=total,
         page=page,
         pages=pages,
@@ -207,7 +207,7 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return JobResponse.from_orm(job)
+    return JobResponse.model_validate(job)
 
 
 @app.get("/api/sources")
