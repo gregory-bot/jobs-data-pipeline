@@ -59,7 +59,7 @@ class JobResponse(BaseModel):
     is_active: bool = True
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class PaginatedResponse(BaseModel):
@@ -204,7 +204,7 @@ def list_jobs(
     jobs = query.offset((page - 1) * per_page).limit(per_page).all()
 
     return PaginatedResponse(
-        jobs=[JobResponse.model_validate(j) for j in jobs],
+        jobs=[JobResponse.from_orm(j) for j in jobs],
         total=total,
         page=page,
         pages=pages,
@@ -218,7 +218,7 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return JobResponse.model_validate(job)
+    return JobResponse.from_orm(job)
 
 
 @app.get("/api/sources")
