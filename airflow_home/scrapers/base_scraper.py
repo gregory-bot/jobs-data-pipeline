@@ -33,6 +33,7 @@ class JobData:
         url: Optional[str] = None,
         apply_url: Optional[str] = None,
         tags: Optional[str] = None,
+        requirements: Optional[str] = None,
         posted_date: Optional[datetime.datetime] = None,
         application_deadline: Optional[datetime.datetime] = None,
         external_id: Optional[str] = None,
@@ -51,6 +52,7 @@ class JobData:
         self.url = url
         self.apply_url = apply_url
         self.tags = tags
+        self.requirements = requirements
         self.posted_date = posted_date
         self.application_deadline = application_deadline
         self.external_id = external_id
@@ -71,6 +73,7 @@ class JobData:
             "url": self.url,
             "apply_url": self.apply_url,
             "tags": self.tags,
+            "requirements": self.requirements,
             "posted_date": self.posted_date,
             "application_deadline": self.application_deadline,
             "external_id": self.external_id,

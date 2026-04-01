@@ -52,13 +52,14 @@ class JobResponse(BaseModel):
     apply_url: Optional[str] = None
     source: str
     tags: Optional[str] = None
+    requirements: Optional[str] = None
     posted_date: Optional[datetime] = None
     application_deadline: Optional[datetime] = None
     scraped_at: Optional[datetime] = None
     is_active: bool = True
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PaginatedResponse(BaseModel):
@@ -108,8 +109,11 @@ def startup():
             conn.execute(text(
                 "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_deadline TIMESTAMP"
             ))
+            conn.execute(text(
+                "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requirements TEXT"
+            ))
             conn.execute(text("COMMIT"))
-            logger.info("DB migration: application_deadline column ensured")
+            logger.info("DB migration: columns ensured")
         except Exception as e:
             logger.warning(f"DB migration note: {e}")
     # Schedule daily scrape at 2:00 PM EAT (11:00 AM UTC)

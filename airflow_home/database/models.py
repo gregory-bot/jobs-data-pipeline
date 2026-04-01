@@ -34,6 +34,7 @@ class Job(Base):
     apply_url = Column(String(1000), nullable=True)
     source = Column(String(100), nullable=False)  # linkedin, myjobsinkenya, etc.
     tags = Column(Text, nullable=True)  # comma-separated tags/skills
+    requirements = Column(Text, nullable=True)  # newline-separated requirements
     posted_date = Column(DateTime, nullable=True)
     application_deadline = Column(DateTime, nullable=True)  # when applications close
     scraped_at = Column(DateTime, default=datetime.datetime.utcnow)

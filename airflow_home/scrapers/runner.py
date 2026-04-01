@@ -94,6 +94,7 @@ def run_scraper(
                         "company": stmt.excluded.company,
                         "location": stmt.excluded.location,
                         "description": stmt.excluded.description,
+                        "requirements": stmt.excluded.requirements,
                         "salary_min": stmt.excluded.salary_min,
                         "salary_max": stmt.excluded.salary_max,
                         "url": stmt.excluded.url,
