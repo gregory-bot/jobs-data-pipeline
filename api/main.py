@@ -4,7 +4,7 @@ Includes built-in cron scheduler that runs daily at 2PM EAT.
 """
 import math
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, Depends, Query, HTTPException
@@ -134,6 +134,17 @@ def shutdown():
     scheduler.shutdown(wait=False)
 
 
+# Global exception handler to surface real error messages
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    import traceback
+    logger.error(f"Unhandled exception on {request.url}: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
 # --- Endpoints ---
 
 @app.get("/")
@@ -157,8 +168,8 @@ def list_jobs(
     """List jobs with filtering, search, and pagination."""
     query = db.query(Job).filter(Job.is_active == True)
 
-    # Auto-filter out jobs with expired application deadlines
-    now = datetime.now()
+    # Auto-filter out jobs with expired application deadlines (only when deadline is set)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)  # naive UTC to match DB
     query = query.filter(
         (Job.application_deadline == None) | (Job.application_deadline >= now)
     )
