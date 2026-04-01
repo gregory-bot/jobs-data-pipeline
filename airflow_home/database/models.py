@@ -35,6 +35,7 @@ class Job(Base):
     source = Column(String(100), nullable=False)  # linkedin, myjobsinkenya, etc.
     tags = Column(Text, nullable=True)  # comma-separated tags/skills
     posted_date = Column(DateTime, nullable=True)
+    application_deadline = Column(DateTime, nullable=True)  # when applications close
     scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_active = Column(Boolean, default=True)
 

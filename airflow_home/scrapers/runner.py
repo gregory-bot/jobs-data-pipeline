@@ -18,6 +18,10 @@ from airflow_home.scrapers.glassdoor_scraper import GlassdoorScraper
 from airflow_home.scrapers.fuzu_scraper import FuzuScraper
 from airflow_home.scrapers.google_search_scraper import GoogleJobsSearchScraper
 from airflow_home.scrapers.adzuna_api_scraper import AdzunaAPIScraper
+from airflow_home.scrapers.jobwebkenya_scraper import JobWebKenyaScraper
+from airflow_home.scrapers.corporatestaffing_scraper import CorporateStaffingScraper
+from airflow_home.scrapers.kenyajob_scraper import KenyaJobScraper
+from airflow_home.scrapers.summitrecruitment_scraper import SummitRecruitmentScraper
 from airflow_home.transformers.cleaner import clean_jobs
 
 logging.basicConfig(
@@ -36,6 +40,10 @@ SCRAPER_REGISTRY = {
     "fuzu": FuzuScraper,
     "google_search": GoogleJobsSearchScraper,
     "adzuna": AdzunaAPIScraper,
+    "jobwebkenya": JobWebKenyaScraper,
+    "corporatestaffing": CorporateStaffingScraper,
+    "kenyajob": KenyaJobScraper,
+    "summitrecruitment": SummitRecruitmentScraper,
 }
 
 
@@ -91,6 +99,7 @@ def run_scraper(
                         "url": stmt.excluded.url,
                         "apply_url": stmt.excluded.apply_url,
                         "tags": stmt.excluded.tags,
+                        "application_deadline": stmt.excluded.application_deadline,
                         "scraped_at": stmt.excluded.scraped_at,
                         "is_active": True,
                     },
@@ -154,9 +163,42 @@ def run_all_scrapers(
             logger.error(f"Error running {source}: {e}")
             results.append({"source": source, "status": "error", "error": str(e)})
 
+    # After scraping, deactivate expired jobs
+    deactivate_expired_jobs()
+
     total_found = sum(r.get("jobs_found", 0) for r in results)
     logger.info(f"All scrapers complete. Total jobs found: {total_found}")
     return results
+
+
+def deactivate_expired_jobs():
+    """Mark jobs as inactive if their application deadline has passed or they are stale (>30 days)."""
+    db = SessionLocal()
+    try:
+        now = datetime.datetime.now(datetime.UTC)
+
+        # Deactivate jobs past their application deadline
+        deadline_expired = (
+            db.query(Job)
+            .filter(Job.application_deadline != None, Job.application_deadline < now, Job.is_active == True)
+            .update({"is_active": False})
+        )
+
+        # Deactivate jobs not seen in 30 days (stale)
+        cutoff = now - datetime.timedelta(days=30)
+        stale = (
+            db.query(Job)
+            .filter(Job.scraped_at < cutoff, Job.is_active == True)
+            .update({"is_active": False})
+        )
+
+        db.commit()
+        logger.info(f"Deactivated {deadline_expired} deadline-expired jobs, {stale} stale jobs")
+    except Exception as e:
+        logger.error(f"Error deactivating jobs: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

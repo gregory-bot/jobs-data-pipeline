@@ -1,7 +1,9 @@
 """
 Backend API - FastAPI application for serving job data.
+Includes built-in cron scheduler that runs daily at 2PM EAT.
 """
 import math
+import logging
 from datetime import datetime
 from typing import Optional
 
@@ -10,6 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from airflow_home.database.connection import get_db, init_db
 from airflow_home.database.models import Job, ScrapeLog
@@ -49,6 +53,7 @@ class JobResponse(BaseModel):
     source: str
     tags: Optional[str] = None
     posted_date: Optional[datetime] = None
+    application_deadline: Optional[datetime] = None
     scraped_at: Optional[datetime] = None
     is_active: bool = True
 
@@ -73,9 +78,56 @@ class StatsResponse(BaseModel):
 
 # --- Startup ---
 
+logger = logging.getLogger("api")
+scheduler = BackgroundScheduler()
+
+
+def scheduled_daily_scrape():
+    """Run all scrapers daily at 2PM EAT."""
+    from airflow_home.scrapers.runner import run_all_scrapers
+    logger.info("=== SCHEDULED DAILY SCRAPE STARTED ===")
+    try:
+        results = run_all_scrapers(
+            search_query="jobs",
+            location="Kenya",
+            max_pages=3,
+        )
+        total = sum(r.get("jobs_found", 0) for r in results)
+        logger.info(f"=== DAILY SCRAPE DONE: {total} jobs found ===")
+    except Exception as e:
+        logger.error(f"Scheduled scrape failed: {e}")
+
+
 @app.on_event("startup")
 def startup():
     init_db()
+    # Migrate: add application_deadline column if it doesn't exist
+    from airflow_home.database.connection import engine
+    with engine.connect() as conn:
+        try:
+            conn.execute(text(
+                "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_deadline TIMESTAMP"
+            ))
+            conn.commit()
+            logger.info("DB migration: application_deadline column ensured")
+        except Exception as e:
+            logger.warning(f"DB migration note: {e}")
+    # Schedule daily scrape at 2:00 PM EAT (11:00 AM UTC)
+    scheduler.add_job(
+        scheduled_daily_scrape,
+        CronTrigger(hour=11, minute=0),  # 11 UTC = 2PM EAT
+        id="daily_scrape",
+        name="Daily Full Scrape (2PM EAT)",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.start()
+    logger.info("Scheduler started: daily scrape at 2PM EAT")
+
+
+@app.on_event("shutdown")
+def shutdown():
+    scheduler.shutdown(wait=False)
 
 
 # --- Endpoints ---
@@ -100,6 +152,12 @@ def list_jobs(
 ):
     """List jobs with filtering, search, and pagination."""
     query = db.query(Job).filter(Job.is_active == True)
+
+    # Auto-filter out jobs with expired application deadlines
+    now = datetime.utcnow()
+    query = query.filter(
+        (Job.application_deadline == None) | (Job.application_deadline >= now)
+    )
 
     if search:
         search_filter = f"%{search}%"
@@ -223,3 +281,36 @@ def health_check(db: Session = Depends(get_db)):
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
+
+
+@app.get("/api/scheduler")
+def scheduler_status():
+    """Check scheduler status and next run time."""
+    jobs = scheduler.get_jobs()
+    return {
+        "running": scheduler.running,
+        "jobs": [
+            {
+                "id": job.id,
+                "name": job.name,
+                "next_run": str(job.next_run_time) if job.next_run_time else None,
+            }
+            for job in jobs
+        ],
+    }
+
+
+@app.post("/api/scrape-all")
+def trigger_full_scrape(
+    search_query: Optional[str] = None,
+    location: Optional[str] = Query("Kenya"),
+    max_pages: int = Query(3, ge=1, le=10),
+):
+    """Manually trigger a scrape across all sources."""
+    from airflow_home.scrapers.runner import run_all_scrapers
+    results = run_all_scrapers(
+        search_query=search_query,
+        location=location,
+        max_pages=max_pages,
+    )
+    return {"results": results, "total_found": sum(r.get("jobs_found", 0) for r in results)}

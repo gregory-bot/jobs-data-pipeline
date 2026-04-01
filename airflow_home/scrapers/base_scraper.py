@@ -34,6 +34,7 @@ class JobData:
         apply_url: Optional[str] = None,
         tags: Optional[str] = None,
         posted_date: Optional[datetime.datetime] = None,
+        application_deadline: Optional[datetime.datetime] = None,
         external_id: Optional[str] = None,
     ):
         self.title = title
@@ -51,6 +52,7 @@ class JobData:
         self.apply_url = apply_url
         self.tags = tags
         self.posted_date = posted_date
+        self.application_deadline = application_deadline
         self.external_id = external_id
 
     def to_dict(self) -> dict:
@@ -70,6 +72,7 @@ class JobData:
             "apply_url": self.apply_url,
             "tags": self.tags,
             "posted_date": self.posted_date,
+            "application_deadline": self.application_deadline,
             "external_id": self.external_id,
         }
 
