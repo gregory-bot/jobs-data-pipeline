@@ -9,10 +9,10 @@ from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, text
 
-from database.connection import get_db, init_db
-from database.models import Job, ScrapeLog
+from airflow_home.database.connection import get_db, init_db
+from airflow_home.database.models import Job, ScrapeLog
 
 app = FastAPI(
     title="Jobs Pipeline API",
@@ -23,8 +23,8 @@ app = FastAPI(
 # CORS - allow frontend to connect
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -203,7 +203,7 @@ def trigger_scrape(
     max_pages: int = Query(3, ge=1, le=10),
 ):
     """Manually trigger a scrape for a specific source."""
-    from scrapers.runner import run_scraper, SCRAPER_REGISTRY
+    from airflow_home.scrapers.runner import run_scraper, SCRAPER_REGISTRY
 
     if source not in SCRAPER_REGISTRY:
         raise HTTPException(
@@ -219,7 +219,7 @@ def trigger_scrape(
 def health_check(db: Session = Depends(get_db)):
     """Health check endpoint for monitoring."""
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "database": str(e)}
