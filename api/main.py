@@ -108,7 +108,7 @@ def startup():
             conn.execute(text(
                 "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_deadline TIMESTAMP"
             ))
-            conn.commit()
+            conn.execute(text("COMMIT"))
             logger.info("DB migration: application_deadline column ensured")
         except Exception as e:
             logger.warning(f"DB migration note: {e}")
