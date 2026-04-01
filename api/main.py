@@ -53,7 +53,7 @@ class JobResponse(BaseModel):
     is_active: bool = True
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class PaginatedResponse(BaseModel):
