@@ -90,11 +90,11 @@ def scheduled_daily_scrape():
     try:
         results = run_all_scrapers(
             search_query="jobs",
-            location="Kenya",
+            location=None,  # Scrape ALL locations, not just Kenya
             max_pages=3,
         )
         total = sum(r.get("jobs_found", 0) for r in results)
-        logger.info(f"=== DAILY SCRAPE DONE: {total} jobs found ===")
+        logger.info(f"=== DAILY SCRAPE DONE: {total} jobs found from {len(results)} sources ===")
     except Exception as e:
         logger.error(f"Scheduled scrape failed: {e}")
 

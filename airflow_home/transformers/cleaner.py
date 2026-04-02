@@ -65,12 +65,26 @@ def normalize_experience_level(raw: Optional[str]) -> Optional[str]:
 
 
 def detect_remote(job: JobData) -> bool:
-    """Detect if a job is remote based on title, location, description."""
+    """Detect if a job is remote based on title, location, description, job_type."""
     search_text = " ".join(
-        filter(None, [job.title, job.location, job.description])
+        filter(None, [job.title, job.location, job.description, job.job_type])
     ).lower()
-    remote_keywords = ["remote", "work from home", "wfh", "anywhere", "distributed"]
+    remote_keywords = ["remote", "work from home", "wfh", "anywhere", "distributed", "worldwide", "global"]
     return any(kw in search_text for kw in remote_keywords)
+
+
+def normalize_salary_currency(job: JobData) -> JobData:
+    """Normalize salary currency field. Default to KES for Kenya-based, USD for remote/global."""
+    if job.salary_min or job.salary_max:
+        if not job.salary_currency:
+            location_lower = (job.location or "").lower()
+            if any(kw in location_lower for kw in ["kenya", "nairobi", "mombasa", "kisumu", "nakuru"]):
+                job.salary_currency = "KES"
+            elif any(kw in location_lower for kw in ["remote", "worldwide", "anywhere", "global"]):
+                job.salary_currency = "USD"
+            else:
+                job.salary_currency = "USD"
+    return job
 
 
 def extract_tags_from_description(description: Optional[str]) -> Optional[str]:
@@ -108,6 +122,9 @@ def clean_job(job: JobData) -> JobData:
     # Detect remote
     if not job.remote:
         job.remote = detect_remote(job)
+
+    # Normalize salary currency
+    job = normalize_salary_currency(job)
 
     # Extract tags if not already set
     if not job.tags and job.description:
