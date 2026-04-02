@@ -155,7 +155,7 @@ def root():
 @app.get("/api/jobs", response_model=PaginatedResponse)
 def list_jobs(
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
+    per_page: int = Query(20, ge=1, le=1000),
     search: Optional[str] = None,
     source: Optional[str] = None,
     location: Optional[str] = None,
