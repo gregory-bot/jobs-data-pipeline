@@ -24,6 +24,13 @@ class Settings:
             f"?sslmode={self.DB_SSLMODE}"
         )
 
+    # Email (SMTP)
+    SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER = os.getenv("SMTP_USER", "annexcareerske@gmail.com")
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+    EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Annex Careers")
+
     # Scraper
     USER_AGENT = os.getenv(
         "USER_AGENT",

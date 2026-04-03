@@ -11,7 +11,7 @@ alembic==1.13.1
 # API
 fastapi==0.95.2
 uvicorn==0.27.1
-pydantic==1.10.13
+pydantic[email]==1.10.13
 
 # Scheduler (lightweight replacement for Airflow)
 APScheduler==3.10.4
