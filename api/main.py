@@ -304,7 +304,7 @@ def health_check(db: Session = Depends(get_db)):
 
 # --- Email subscription ---
 
-SITE_URL = "https://annex-jd.netlify.app"
+SITE_URL = "https://annex-careers.netlify.app"
 
 
 class SubscribeRequest(BaseModel):
@@ -358,7 +358,7 @@ def build_welcome_email_html(jobs: list[Job]) -> str:
           <!-- Welcome message -->
           <tr>
             <td style="padding:32px 24px 12px;">
-              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">Welcome to Annex Careers! 🎉</h2>
+              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">Welcome to Annex Careers</h2>
               <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
                 You're now subscribed to daily job alerts. We'll send you the latest opportunities straight to your inbox every morning.
               </p>
@@ -437,12 +437,12 @@ def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
     html = build_welcome_email_html(featured_jobs)
 
     try:
-        send_email(req.email, "Welcome to Annex Careers — Here are today's top jobs!", html)
+        send_email(req.email, "Welcome to Annex Careers; Here are today's top opportunities", html)
     except Exception as e:
         logger.error(f"Failed to send welcome email to {req.email}: {e}")
         raise HTTPException(status_code=500, detail="Failed to send email. Please try again.")
 
-    return {"message": "Welcome email sent! Check your inbox."}
+    return {"message": "Welcome"}
 
 
 @app.get("/api/scheduler")
