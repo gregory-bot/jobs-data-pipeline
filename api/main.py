@@ -440,7 +440,7 @@ def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
         send_email(req.email, "Welcome to Annex Careers - Here are today's top opportunities", html)
     except Exception as e:
         logger.error(f"Failed to send welcome email to {req.email}: {e}")
-        raise HTTPException(status_code=500, detail=f"Email error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to send email. Please try again.")
 
     return {"message": "Welcome"}
 
