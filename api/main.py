@@ -339,6 +339,39 @@ def health_check(db: Session = Depends(get_db)):
 SITE_URL = "https://annex-careers.netlify.app"
 
 
+@app.get("/api/test-email")
+def test_email_config():
+    """Diagnostic: test SMTP connection and send a test email."""
+    diag = {
+        "smtp_host": settings.SMTP_HOST,
+        "smtp_port": settings.SMTP_PORT,
+        "smtp_user": settings.SMTP_USER,
+        "smtp_password_set": bool(settings.SMTP_PASSWORD),
+        "smtp_password_length": len(settings.SMTP_PASSWORD) if settings.SMTP_PASSWORD else 0,
+    }
+    try:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+            server.ehlo()
+            diag["ehlo"] = "ok"
+            server.starttls()
+            diag["starttls"] = "ok"
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            diag["login"] = "ok"
+
+            # Send a minimal test
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = "Annex Careers SMTP Test"
+            msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.SMTP_USER}>"
+            msg["To"] = settings.SMTP_USER
+            msg.attach(MIMEText("<p>SMTP is working.</p>", "html"))
+            server.sendmail(settings.SMTP_USER, [settings.SMTP_USER], msg.as_string())
+            diag["send_test"] = "ok"
+    except Exception as e:
+        diag["error"] = str(e)
+        diag["error_type"] = type(e).__name__
+    return diag
+
+
 class SubscribeRequest(BaseModel):
     email: EmailStr
 
