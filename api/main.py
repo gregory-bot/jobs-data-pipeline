@@ -536,11 +536,14 @@ def _save_user(db: Session, email: str, name: str = None, source: str = "subscri
     """Upsert a user into the users table."""
     existing = db.query(User).filter(User.email == email).first()
     if existing:
-        if name and not existing.name:
+        if name:
             existing.name = name
+        if source == "cv_upload":
+            existing.source = "cv_upload"
         if job_interests:
             existing.job_interests = job_interests
         db.commit()
+        db.refresh(existing)
         return existing
     user = User(email=email, name=name, source=source, job_interests=job_interests)
     db.add(user)
@@ -581,25 +584,36 @@ def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
 
     # Send targeted email if interests provided
     if req.job_interests and settings.SMTP_USER and settings.SMTP_PASSWORD:
-        interest_keywords = [kw.strip().lower() for kw in req.job_interests.split(",")]
+        from sqlalchemy import or_
+        interest_keywords = [kw.strip().lower() for kw in req.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
+        if not interest_keywords:
+            interest_keywords = [req.job_interests.strip().lower()]
         filters = []
         for kw in interest_keywords:
             filters.append(Job.title.ilike(f"%{kw}%"))
-            filters.append(Job.tags.ilike(f"%{kw}%") if Job.tags else None)
-        from sqlalchemy import or_
-        valid_filters = [f for f in filters if f is not None]
+            filters.append(Job.description.ilike(f"%{kw}%"))
         matched_jobs = (
             db.query(Job)
             .filter(Job.is_active == True)
-            .filter(or_(*valid_filters) if valid_filters else True)
+            .filter(or_(*filters))
             .order_by(desc(Job.scraped_at))
             .limit(5)
             .all()
         )
-        if matched_jobs:
-            interest_label = req.job_interests.title()
-            html = build_targeted_email_html(req.name or "there", interest_label, matched_jobs)
-            send_email_background(req.email, f"Jobs for {interest_label} professionals like you - Annex Careers", html)
+        # Fallback to latest jobs if no keyword matches
+        if not matched_jobs:
+            matched_jobs = (
+                db.query(Job)
+                .filter(Job.is_active == True)
+                .order_by(desc(Job.scraped_at))
+                .limit(5)
+                .all()
+            )
+        interest_label = req.job_interests.title()
+        html = build_targeted_email_html(req.name or "there", interest_label, matched_jobs)
+        send_email_background(req.email, f"Hey {req.name or 'there'}, jobs for {interest_label} professionals like you - Annex Careers", html)
+        user.last_emailed_at = datetime.now(timezone.utc)
+        db.commit()
 
     return {"message": "User registered", "user_id": user.id}
 
@@ -653,15 +667,18 @@ def send_bulk_alerts(req: BulkEmailRequest, db: Session = Depends(get_db)):
     for user in users:
         # If user has interests, send targeted; otherwise send general
         if user.job_interests:
-            interest_keywords = [kw.strip().lower() for kw in user.job_interests.split(",")]
+            from sqlalchemy import or_
+            interest_keywords = [kw.strip().lower() for kw in user.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
+            if not interest_keywords:
+                interest_keywords = [user.job_interests.strip().lower()]
             filters = []
             for kw in interest_keywords:
                 filters.append(Job.title.ilike(f"%{kw}%"))
-            from sqlalchemy import or_
+                filters.append(Job.description.ilike(f"%{kw}%"))
             matched = (
                 db.query(Job)
                 .filter(Job.is_active == True)
-                .filter(or_(*filters) if filters else True)
+                .filter(or_(*filters))
                 .order_by(desc(Job.scraped_at))
                 .limit(5)
                 .all()
