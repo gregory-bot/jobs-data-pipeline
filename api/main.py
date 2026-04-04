@@ -339,62 +339,6 @@ def health_check(db: Session = Depends(get_db)):
 SITE_URL = "https://annex-careers.netlify.app"
 
 
-@app.get("/api/test-email")
-def test_email_config():
-    """Diagnostic: test email configuration."""
-    diag = {
-        "brevo_api_key_set": bool(settings.BREVO_API_KEY),
-        "resend_api_key_set": bool(settings.RESEND_API_KEY),
-        "email_from": settings.EMAIL_FROM,
-        "smtp_user": settings.SMTP_USER,
-    }
-    # Test Brevo
-    if settings.BREVO_API_KEY:
-        try:
-            resp = httpx.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={
-                    "api-key": settings.BREVO_API_KEY,
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "sender": {"name": settings.EMAIL_FROM_NAME, "email": settings.SMTP_USER},
-                    "to": [{"email": settings.SMTP_USER}],
-                    "subject": "Annex Careers Email Test",
-                    "htmlContent": "<p>Brevo email is working!</p>",
-                },
-                timeout=15,
-            )
-            diag["brevo_status"] = resp.status_code
-            diag["brevo_response"] = resp.text[:300]
-        except Exception as e:
-            diag["brevo_error"] = str(e)
-    # Test Resend
-    elif settings.RESEND_API_KEY:
-        try:
-            resp = httpx.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {settings.RESEND_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "from": settings.EMAIL_FROM,
-                    "to": [settings.SMTP_USER],
-                    "subject": "Annex Careers Email Test",
-                    "html": "<p>Resend email is working!</p>",
-                },
-                timeout=15,
-            )
-            diag["resend_status"] = resp.status_code
-            diag["resend_response"] = resp.text[:300]
-        except Exception as e:
-            diag["resend_error"] = str(e)
-    else:
-        diag["status"] = "no HTTP email provider configured"
-    return diag
-
-
 class SubscribeRequest(BaseModel):
     email: EmailStr
 
