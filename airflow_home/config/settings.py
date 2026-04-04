@@ -24,7 +24,7 @@ class Settings:
             f"?sslmode={self.DB_SSLMODE}"
         )
 
-    # Email (SMTP fallback + Resend HTTP API)
+    # Email (SMTP fallback + HTTP email APIs)
     SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER = os.getenv("SMTP_USER", "annexcareerske@gmail.com")
@@ -32,6 +32,7 @@ class Settings:
     EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Annex Careers")
     RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
     EMAIL_FROM = os.getenv("EMAIL_FROM", "Annex Careers <onboarding@resend.dev>")
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 
     # Scraper
     USER_AGENT = os.getenv(

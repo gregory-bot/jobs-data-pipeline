@@ -343,16 +343,34 @@ SITE_URL = "https://annex-careers.netlify.app"
 def test_email_config():
     """Diagnostic: test email configuration."""
     diag = {
+        "brevo_api_key_set": bool(settings.BREVO_API_KEY),
         "resend_api_key_set": bool(settings.RESEND_API_KEY),
-        "resend_api_key_length": len(settings.RESEND_API_KEY) if settings.RESEND_API_KEY else 0,
         "email_from": settings.EMAIL_FROM,
-        "smtp_host": settings.SMTP_HOST,
-        "smtp_port": settings.SMTP_PORT,
         "smtp_user": settings.SMTP_USER,
-        "smtp_password_set": bool(settings.SMTP_PASSWORD),
     }
+    # Test Brevo
+    if settings.BREVO_API_KEY:
+        try:
+            resp = httpx.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": settings.BREVO_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "sender": {"name": settings.EMAIL_FROM_NAME, "email": settings.SMTP_USER},
+                    "to": [{"email": settings.SMTP_USER}],
+                    "subject": "Annex Careers Email Test",
+                    "htmlContent": "<p>Brevo email is working!</p>",
+                },
+                timeout=15,
+            )
+            diag["brevo_status"] = resp.status_code
+            diag["brevo_response"] = resp.text[:300]
+        except Exception as e:
+            diag["brevo_error"] = str(e)
     # Test Resend
-    if settings.RESEND_API_KEY:
+    elif settings.RESEND_API_KEY:
         try:
             resp = httpx.post(
                 "https://api.resend.com/emails",
@@ -369,11 +387,11 @@ def test_email_config():
                 timeout=15,
             )
             diag["resend_status"] = resp.status_code
-            diag["resend_response"] = resp.json() if resp.status_code in (200, 201) else resp.text
+            diag["resend_response"] = resp.text[:300]
         except Exception as e:
             diag["resend_error"] = str(e)
     else:
-        diag["resend_status"] = "not configured"
+        diag["status"] = "no HTTP email provider configured"
     return diag
 
 
@@ -545,8 +563,29 @@ def build_targeted_email_html(name: str, interest_label: str, jobs: list) -> str
 
 
 def send_email(to_email: str, subject: str, html_body: str):
-    """Send an email via Resend HTTP API (primary) or SMTP (fallback)."""
-    # Primary: Resend HTTP API (works on Render where SMTP is blocked)
+    """Send email via Brevo (primary), Resend (secondary), or SMTP (fallback)."""
+    # Primary: Brevo HTTP API (free 300/day, no domain needed, works on Render)
+    if settings.BREVO_API_KEY:
+        resp = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": settings.BREVO_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "sender": {"name": settings.EMAIL_FROM_NAME, "email": settings.SMTP_USER},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_body,
+            },
+            timeout=15,
+        )
+        if resp.status_code in (200, 201, 202):
+            logger.info(f"Brevo: sent email to {to_email}")
+            return
+        logger.warning(f"Brevo failed ({resp.status_code}): {resp.text}")
+
+    # Secondary: Resend HTTP API
     if settings.RESEND_API_KEY:
         resp = httpx.post(
             "https://api.resend.com/emails",
@@ -565,9 +604,9 @@ def send_email(to_email: str, subject: str, html_body: str):
         if resp.status_code in (200, 201):
             logger.info(f"Resend: sent email to {to_email}")
             return
-        logger.warning(f"Resend failed ({resp.status_code}): {resp.text}, falling back to SMTP")
+        logger.warning(f"Resend failed ({resp.status_code}): {resp.text}")
 
-    # Fallback: SMTP
+    # Fallback: SMTP (won't work on Render free tier but works locally)
     if settings.SMTP_USER and settings.SMTP_PASSWORD:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
@@ -583,7 +622,7 @@ def send_email(to_email: str, subject: str, html_body: str):
         logger.info(f"SMTP: sent email to {to_email}")
         return
 
-    raise RuntimeError("No email provider configured (set RESEND_API_KEY or SMTP_PASSWORD)")
+    raise RuntimeError("No email provider configured (set BREVO_API_KEY, RESEND_API_KEY, or SMTP_PASSWORD)")
 
 
 def send_email_background(to_email: str, subject: str, html_body: str):
@@ -620,7 +659,7 @@ def _save_user(db: Session, email: str, name: str = None, source: str = "subscri
 @app.post("/api/subscribe")
 def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
     """Subscribe to job alerts — saves user and sends welcome email in background."""
-    if not settings.RESEND_API_KEY and (not settings.SMTP_USER or not settings.SMTP_PASSWORD):
+    if not settings.RESEND_API_KEY and not settings.BREVO_API_KEY and (not settings.SMTP_USER or not settings.SMTP_PASSWORD):
         raise HTTPException(status_code=503, detail="Email service not configured")
 
     # Save subscriber to DB
@@ -648,7 +687,7 @@ def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
     user = _save_user(db, email=req.email, name=req.name, source="cv_upload", job_interests=req.job_interests)
 
     # Send targeted email if interests provided
-    if req.job_interests and (settings.RESEND_API_KEY or (settings.SMTP_USER and settings.SMTP_PASSWORD)):
+    if req.job_interests and (settings.BREVO_API_KEY or settings.RESEND_API_KEY or (settings.SMTP_USER and settings.SMTP_PASSWORD)):
         from sqlalchemy import or_
         interest_keywords = [kw.strip().lower() for kw in req.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
         if not interest_keywords:
@@ -713,7 +752,7 @@ def list_users(
 @app.post("/api/users/send-alerts")
 def send_bulk_alerts(req: BulkEmailRequest, db: Session = Depends(get_db)):
     """Send daily job alert emails to selected users (admin trigger)."""
-    if not settings.RESEND_API_KEY and (not settings.SMTP_USER or not settings.SMTP_PASSWORD):
+    if not settings.BREVO_API_KEY and not settings.RESEND_API_KEY and (not settings.SMTP_USER or not settings.SMTP_PASSWORD):
         raise HTTPException(status_code=503, detail="Email service not configured")
 
     users = db.query(User).filter(User.id.in_(req.user_ids)).all()
