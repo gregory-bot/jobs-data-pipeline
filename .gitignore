@@ -19,3 +19,9 @@ airflow-data/
 
 # OS
 .DS_Store
+# Local scripts with secrets
+backfill_descriptions.py
+run_migration.py
+test_descriptions.py
+backfill.log
+backfill_err.log

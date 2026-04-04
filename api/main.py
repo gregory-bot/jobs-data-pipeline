@@ -5,10 +5,12 @@ Includes built-in cron scheduler that runs daily at 2PM EAT.
 import math
 import logging
 import smtplib
+import threading
+import httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,9 +19,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from airflow_home.database.connection import get_db, init_db
-from airflow_home.database.models import Job, ScrapeLog
+from airflow_home.database.models import Job, ScrapeLog, User
 from airflow_home.config.settings import settings
 
 app = FastAPI(
@@ -103,10 +106,19 @@ def scheduled_daily_scrape():
         logger.error(f"Scheduled scrape failed: {e}")
 
 
+def keep_alive_ping():
+    """Ping our own health endpoint to prevent Render from sleeping."""
+    try:
+        httpx.get("https://jobs-data-pipeline.onrender.com/api/health", timeout=10)
+        logger.debug("Keep-alive ping sent")
+    except Exception:
+        pass
+
+
 @app.on_event("startup")
 def startup():
     init_db()
-    # Migrate: add application_deadline column if it doesn't exist
+    # Migrate: add columns / tables if they don't exist
     from airflow_home.database.connection import engine
     with engine.connect() as conn:
         try:
@@ -116,8 +128,20 @@ def startup():
             conn.execute(text(
                 "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requirements TEXT"
             ))
+            # Create users table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR(320) NOT NULL UNIQUE,
+                    name VARCHAR(300),
+                    source VARCHAR(50) NOT NULL DEFAULT 'subscribe',
+                    job_interests TEXT,
+                    subscribed_at TIMESTAMP DEFAULT NOW(),
+                    last_emailed_at TIMESTAMP
+                )
+            """))
             conn.execute(text("COMMIT"))
-            logger.info("DB migration: columns ensured")
+            logger.info("DB migration: columns/tables ensured")
         except Exception as e:
             logger.warning(f"DB migration note: {e}")
     # Schedule daily scrape at 2:00 PM EAT (11:00 AM UTC)
@@ -129,8 +153,16 @@ def startup():
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    # Keep-alive ping every 10 minutes to prevent Render sleep
+    scheduler.add_job(
+        keep_alive_ping,
+        IntervalTrigger(minutes=10),
+        id="keep_alive",
+        name="Keep-alive Ping (10min)",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("Scheduler started: daily scrape at 2PM EAT")
+    logger.info("Scheduler started: daily scrape at 2PM EAT + keep-alive every 10min")
 
 
 @app.on_event("shutdown")
@@ -311,8 +343,19 @@ class SubscribeRequest(BaseModel):
     email: EmailStr
 
 
-def build_welcome_email_html(jobs: list[Job]) -> str:
+class UserRegisterRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    job_interests: Optional[str] = None
+
+
+class BulkEmailRequest(BaseModel):
+    user_ids: List[int]
+
+
+def build_welcome_email_html(jobs: list, name: str = None) -> str:
     """Build a branded HTML welcome email with featured jobs."""
+    greeting = f"Hello {name}," if name else "Hello,"
     job_cards = ""
     for job in jobs:
         location = job.location or "Remote"
@@ -347,52 +390,111 @@ def build_welcome_email_html(jobs: list[Job]) -> str:
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <!-- Red header bar -->
           <tr>
             <td style="background:#dc2626;padding:28px 24px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Annex Careers</h1>
               <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Your gateway to the best job opportunities</p>
             </td>
           </tr>
-
-          <!-- Welcome message -->
           <tr>
             <td style="padding:32px 24px 12px;">
-              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">Welcome to Annex Careers</h2>
+              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">{greeting}</h2>
               <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
-                You're now subscribed to daily job alerts. We'll send you the latest opportunities straight to your inbox every morning.
-              </p>
-              <p style="margin:0;color:#374151;font-size:14px;line-height:1.6;">
-                Here are some jobs you can explore right now:
+                Here are the latest job opportunities we think you'll love:
               </p>
             </td>
           </tr>
-
-          <!-- Section header -->
           <tr>
             <td style="padding:20px 24px 12px;">
               <h3 style="margin:0;color:#dc2626;font-size:16px;font-weight:600;border-bottom:2px solid #dc2626;padding-bottom:8px;">Latest Opportunities</h3>
             </td>
           </tr>
-
-          <!-- Job cards -->
           {job_cards}
-
-          <!-- Browse all CTA -->
           <tr>
             <td style="padding:20px 24px 8px;text-align:center;">
               <a href="{SITE_URL}/jobs" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;font-weight:600;padding:12px 36px;border-radius:8px;text-decoration:none;">Browse All Jobs</a>
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="padding:28px 24px;text-align:center;border-top:1px solid #e5e7eb;margin-top:16px;">
               <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
-                © {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
+                &copy; {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
               </p>
               <p style="margin:0;color:#9ca3af;font-size:11px;">
                 <a href="{SITE_URL}" style="color:#dc2626;text-decoration:none;">Visit website</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+
+def build_targeted_email_html(name: str, interest_label: str, jobs: list) -> str:
+    """Build an email for targeted job recommendations based on user interests."""
+    job_cards = ""
+    for job in jobs:
+        location = job.location or "Remote"
+        company = job.company or "—"
+        job_url = f"{SITE_URL}/jobs/{job.id}"
+        job_cards += f"""
+        <tr>
+          <td style="padding:0 24px 12px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <a href="{job_url}" style="color:#dc2626;font-size:15px;font-weight:600;text-decoration:none;">{job.title}</a>
+                  <div style="color:#6b7280;font-size:13px;margin-top:4px;">{company}</div>
+                  <div style="color:#6b7280;font-size:12px;margin-top:4px;">📍 {location}</div>
+                  <div style="margin-top:12px;">
+                    <a href="{job_url}" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:13px;font-weight:500;padding:8px 20px;border-radius:6px;text-decoration:none;">View &amp; Apply</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>"""
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background:#dc2626;padding:28px 24px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Annex Careers</h1>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Jobs matched to your interests</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 24px 12px;">
+              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">Hello {name},</h2>
+              <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
+                Check out jobs applied by other <strong>{interest_label}</strong> professionals like you:
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 24px 12px;">
+              <h3 style="margin:0;color:#dc2626;font-size:16px;font-weight:600;border-bottom:2px solid #dc2626;padding-bottom:8px;">Jobs for {interest_label} Professionals</h3>
+            </td>
+          </tr>
+          {job_cards}
+          <tr>
+            <td style="padding:20px 24px 8px;text-align:center;">
+              <a href="{SITE_URL}/jobs" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;font-weight:600;padding:12px 36px;border-radius:8px;text-decoration:none;">Browse All Jobs</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 24px;text-align:center;border-top:1px solid #e5e7eb;margin-top:16px;">
+              <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
+                &copy; {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
               </p>
             </td>
           </tr>
@@ -419,13 +521,44 @@ def send_email(to_email: str, subject: str, html_body: str):
         server.sendmail(settings.SMTP_USER, [to_email], msg.as_string())
 
 
+def send_email_background(to_email: str, subject: str, html_body: str):
+    """Fire-and-forget email sending in a background thread."""
+    def _send():
+        try:
+            send_email(to_email, subject, html_body)
+            logger.info(f"Sent email to {to_email}")
+        except Exception as e:
+            logger.error(f"Failed to send email to {to_email}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+
+def _save_user(db: Session, email: str, name: str = None, source: str = "subscribe", job_interests: str = None):
+    """Upsert a user into the users table."""
+    existing = db.query(User).filter(User.email == email).first()
+    if existing:
+        if name and not existing.name:
+            existing.name = name
+        if job_interests:
+            existing.job_interests = job_interests
+        db.commit()
+        return existing
+    user = User(email=email, name=name, source=source, job_interests=job_interests)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @app.post("/api/subscribe")
 def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
-    """Subscribe to job alerts — sends a branded welcome email with featured jobs."""
+    """Subscribe to job alerts — saves user and sends welcome email in background."""
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         raise HTTPException(status_code=503, detail="Email service not configured")
 
-    # Fetch 5 recent active jobs
+    # Save subscriber to DB
+    _save_user(db, email=req.email, source="subscribe")
+
+    # Fetch 5 recent active jobs for the email
     featured_jobs = (
         db.query(Job)
         .filter(Job.is_active == True)
@@ -435,14 +568,149 @@ def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
     )
 
     html = build_welcome_email_html(featured_jobs)
+    # Send in background so the response returns instantly
+    send_email_background(req.email, "Welcome to Annex Careers - Here are today's top opportunities", html)
 
-    try:
-        send_email(req.email, "Welcome to Annex Careers - Here are today's top opportunities", html)
-    except Exception as e:
-        logger.error(f"Failed to send welcome email to {req.email}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send email. Please try again.")
+    return {"message": "Subscribed! Welcome email is on its way."}
 
-    return {"message": "Welcome"}
+
+@app.post("/api/users/register")
+def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
+    """Register a user from CV upload — saves email, name, interests and sends targeted email."""
+    user = _save_user(db, email=req.email, name=req.name, source="cv_upload", job_interests=req.job_interests)
+
+    # Send targeted email if interests provided
+    if req.job_interests and settings.SMTP_USER and settings.SMTP_PASSWORD:
+        interest_keywords = [kw.strip().lower() for kw in req.job_interests.split(",")]
+        filters = []
+        for kw in interest_keywords:
+            filters.append(Job.title.ilike(f"%{kw}%"))
+            filters.append(Job.tags.ilike(f"%{kw}%") if Job.tags else None)
+        from sqlalchemy import or_
+        valid_filters = [f for f in filters if f is not None]
+        matched_jobs = (
+            db.query(Job)
+            .filter(Job.is_active == True)
+            .filter(or_(*valid_filters) if valid_filters else True)
+            .order_by(desc(Job.scraped_at))
+            .limit(5)
+            .all()
+        )
+        if matched_jobs:
+            interest_label = req.job_interests.title()
+            html = build_targeted_email_html(req.name or "there", interest_label, matched_jobs)
+            send_email_background(req.email, f"Jobs for {interest_label} professionals like you - Annex Careers", html)
+
+    return {"message": "User registered", "user_id": user.id}
+
+
+@app.get("/api/users")
+def list_users(
+    source: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """List all registered users (admin)."""
+    query = db.query(User).order_by(desc(User.subscribed_at))
+    if source:
+        query = query.filter(User.source == source)
+    users = query.all()
+    return {
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "name": u.name,
+                "source": u.source,
+                "job_interests": u.job_interests,
+                "subscribed_at": u.subscribed_at.isoformat() if u.subscribed_at else None,
+                "last_emailed_at": u.last_emailed_at.isoformat() if u.last_emailed_at else None,
+            }
+            for u in users
+        ],
+        "total": len(users),
+    }
+
+
+@app.post("/api/users/send-alerts")
+def send_bulk_alerts(req: BulkEmailRequest, db: Session = Depends(get_db)):
+    """Send daily job alert emails to selected users (admin trigger)."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        raise HTTPException(status_code=503, detail="Email service not configured")
+
+    users = db.query(User).filter(User.id.in_(req.user_ids)).all()
+    if not users:
+        raise HTTPException(status_code=404, detail="No users found")
+
+    featured_jobs = (
+        db.query(Job)
+        .filter(Job.is_active == True)
+        .order_by(desc(Job.scraped_at))
+        .limit(5)
+        .all()
+    )
+
+    sent_count = 0
+    for user in users:
+        # If user has interests, send targeted; otherwise send general
+        if user.job_interests:
+            interest_keywords = [kw.strip().lower() for kw in user.job_interests.split(",")]
+            filters = []
+            for kw in interest_keywords:
+                filters.append(Job.title.ilike(f"%{kw}%"))
+            from sqlalchemy import or_
+            matched = (
+                db.query(Job)
+                .filter(Job.is_active == True)
+                .filter(or_(*filters) if filters else True)
+                .order_by(desc(Job.scraped_at))
+                .limit(5)
+                .all()
+            )
+            jobs_to_send = matched if matched else featured_jobs
+            interest_label = user.job_interests.title()
+            html = build_targeted_email_html(user.name or "there", interest_label, jobs_to_send)
+            subject = f"Jobs for {interest_label} professionals - Annex Careers"
+        else:
+            html = build_welcome_email_html(featured_jobs, name=user.name)
+            subject = "Your Daily Job Alerts - Annex Careers"
+
+        send_email_background(user.email, subject, html)
+        user.last_emailed_at = datetime.now(timezone.utc)
+        sent_count += 1
+
+    db.commit()
+    return {"message": f"Sending emails to {sent_count} users", "sent": sent_count}
+
+
+@app.get("/api/scrape-logs")
+def get_scrape_logs(
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """Get recent scrape logs for admin dashboard."""
+    logs = (
+        db.query(ScrapeLog)
+        .order_by(desc(ScrapeLog.started_at))
+        .limit(limit)
+        .all()
+    )
+    return {
+        "logs": [
+            {
+                "id": log.id,
+                "source": log.source,
+                "status": log.status,
+                "jobs_found": log.jobs_found,
+                "jobs_new": log.jobs_new,
+                "jobs_updated": log.jobs_updated,
+                "error_message": log.error_message,
+                "started_at": log.started_at.isoformat() if log.started_at else None,
+                "finished_at": log.finished_at.isoformat() if log.finished_at else None,
+            }
+            for log in logs
+        ],
+        "total": len(logs),
+    }
 
 
 @app.get("/api/scheduler")
