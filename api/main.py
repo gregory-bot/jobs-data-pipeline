@@ -84,6 +84,19 @@ class StatsResponse(BaseModel):
     recent_scrapes: list[dict]
 
 
+class CreateJobRequest(BaseModel):
+    title: str
+    company: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    job_type: Optional[str] = None  # Full-time, Part-time, Contract, Internship, Attachment
+    experience_level: Optional[str] = None
+    remote: bool = False
+    apply_url: Optional[str] = None
+    tags: Optional[str] = None
+    application_deadline: Optional[str] = None  # ISO date string
+
+
 # --- Startup ---
 
 logger = logging.getLogger("api")
@@ -255,6 +268,40 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return JobResponse.from_orm(job)
+
+
+@app.post("/api/jobs")
+def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
+    """Manually add a job posting (admin)."""
+    deadline = None
+    if req.application_deadline:
+        try:
+            deadline = datetime.fromisoformat(req.application_deadline)
+        except ValueError:
+            pass
+
+    job = Job(
+        title=req.title,
+        company=req.company,
+        location=req.location,
+        description=req.description,
+        job_type=req.job_type,
+        experience_level=req.experience_level,
+        remote=req.remote,
+        url=req.apply_url,
+        apply_url=req.apply_url,
+        source="manual",
+        tags=req.tags,
+        application_deadline=deadline,
+        posted_date=datetime.now(timezone.utc),
+        scraped_at=datetime.now(timezone.utc),
+        is_active=True,
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    logger.info(f"Manual job created: {job.id} - {job.title}")
+    return {"message": "Job created", "job_id": job.id}
 
 
 @app.get("/api/sources")
