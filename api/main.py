@@ -247,9 +247,25 @@ def list_jobs(
         "%Your CV Format%",
         "Click here to%",
         "%post comments%",
+        "CURRENT%JOBS IN KENYA%",   # "CURRENT MEDIA JOBS IN KENYA 2026"
+        "Current%Jobs in Kenya%",
+        "All jobs |%",              # "All jobs | Jobwebkenya.com"
+        "%Jobs Archive%",           # "Jobs Archive - Page 2 of..."
+        "Jobweb Kenya:%",           # "Jobweb Kenya: Current Jobs..."
+        "%Jobs, Employment%",       # "Kenya HR Jobs, Employment"
+        "%Now Hiring jobs%",        # "Now Hiring jobs in Kenya"
+        "%Immediate jobs in%",      # "77 Immediate jobs in Kenya"
+        "%We Are Hiring jobs%",     # "2000+ We Are Hiring jobs"
+        "%Vacancies jobs in%",      # "120 Vacancies jobs in Kenya"
+        "%Companies Hiring jobs%",  # "203 Companies Hiring jobs"
+        "%Hiring jobs in%",         # general hiring aggregator
+        "%jobs in Kenya (%",        # "5000+ jobs in Kenya (352 new)"
     ]
     for pattern in aggregator_patterns:
         query = query.filter(~Job.title.ilike(pattern))
+
+    # 4. Filter out google_* sources entirely (these are search result pages, not real job posts)
+    query = query.filter(~Job.source.ilike("google_%"))
 
     if search:
         search_filter = f"%{search}%"
@@ -358,6 +374,12 @@ def cleanup_junk_jobs(db: Session = Depends(get_db)):
         "%Explore the Trending%", "%Check out the%Jobs%",
         "%Exciting Trending%", "%Latest In-Demand%",
         "%Your CV Format%", "Click here to%", "%post comments%",
+        "CURRENT%JOBS IN KENYA%", "Current%Jobs in Kenya%",
+        "All jobs |%", "%Jobs Archive%", "Jobweb Kenya:%",
+        "%Jobs, Employment%", "%Now Hiring jobs%",
+        "%Immediate jobs in%", "%We Are Hiring jobs%",
+        "%Vacancies jobs in%", "%Companies Hiring jobs%",
+        "%Hiring jobs in%", "%jobs in Kenya (%",
     ]
     for pattern in aggregator_patterns:
         matches = db.query(Job.id).filter(Job.is_active == True, Job.title.ilike(pattern)).all()
@@ -378,6 +400,10 @@ def cleanup_junk_jobs(db: Session = Depends(get_db)):
         .all()
     )
     all_junk_ids.update(j.id for j in generic_category)
+
+    # 5. All google_* sources (search result pages, not real job posts)
+    google_junk = db.query(Job.id).filter(Job.is_active == True, Job.source.ilike("google_%")).all()
+    all_junk_ids.update(j.id for j in google_junk)
 
     # Batch deactivate
     if all_junk_ids:
