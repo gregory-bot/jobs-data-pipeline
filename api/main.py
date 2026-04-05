@@ -223,16 +223,33 @@ def list_jobs(
         (Job.application_deadline == None) | (Job.application_deadline >= now)
     )
 
-    # Filter out junk/category-page jobs (not real job postings)
-    junk_titles = [
-        "Jobs", "Manufacturing Jobs", "CNA Jobs", "Bindery Jobs",
-        "College Jobs", "Phlebotomist Jobs", "Various Jobs", "Open Jobs",
-        "Distribution Jobs", "Search Jobs", "Construction Jobs", "CNA - Jobs",
-    ]
-    for jt in junk_titles:
-        query = query.filter(Job.title != jt)
-    # Also filter out very short generic titles that are just category names
+    # --- QUALITY FILTERS: Only show real, useful job postings ---
+
+    # 1. Must have a description (if we couldn't scrape the details, don't show it)
+    query = query.filter(Job.description != None, Job.description != "", func.length(Job.description) > 30)
+
+    # 2. Filter out very short generic titles
     query = query.filter(func.length(Job.title) > 5)
+
+    # 3. Filter out aggregator/blog/search-page titles (regex-like patterns via ILIKE)
+    aggregator_patterns = [
+        "%Hiring For jobs%",        # "2000+ Hiring For jobs in Kenya"
+        "%Hiring Full Time jobs%",  # "574 Hiring Full Time jobs"
+        "%Job In Kenya Jobs%",      # "5000+ Job In Kenya Jobs"
+        "Jobs in Kenya%",           # "Jobs in Kenya - Nairobi"
+        "Jobs in Nairobi%",
+        "%Trending%Jobs%",          # "Trending Accounting and Finance Jobs"
+        "%Latest%Jobs in Kenya%",
+        "%Explore the Trending%",
+        "%Check out the%Jobs%",
+        "%Exciting Trending%",
+        "%Latest In-Demand%",
+        "%Your CV Format%",
+        "Click here to%",
+        "%post comments%",
+    ]
+    for pattern in aggregator_patterns:
+        query = query.filter(~Job.title.ilike(pattern))
 
     if search:
         search_filter = f"%{search}%"
@@ -317,34 +334,58 @@ def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
 
 @app.post("/api/jobs/cleanup")
 def cleanup_junk_jobs(db: Session = Depends(get_db)):
-    """Deactivate junk/category-page jobs that aren't real postings (admin)."""
+    """Deactivate junk/category-page jobs and jobs with no description (admin)."""
     from sqlalchemy import or_
-    junk_titles = [
-        "Jobs", "Manufacturing Jobs", "CNA Jobs", "Bindery Jobs",
-        "College Jobs", "Phlebotomist Jobs", "Various Jobs", "Open Jobs",
-        "Distribution Jobs", "Search Jobs", "Construction Jobs", "CNA - Jobs",
-    ]
-    # Exact title matches
-    junk_exact = db.query(Job).filter(Job.title.in_(junk_titles), Job.is_active == True).all()
-    # Very short titles (<=5 chars) that are likely not real
-    junk_short = db.query(Job).filter(func.length(Job.title) <= 5, Job.is_active == True).all()
-    # Titles ending with " Jobs" that have no company and no description (category pages)
-    junk_category = (
-        db.query(Job)
+
+    all_junk_ids = set()
+
+    # 1. Jobs with no description at all (scraper couldn't get details)
+    no_desc = (
+        db.query(Job.id)
         .filter(
-            Job.title.ilike("% Jobs"),
-            or_(Job.company == None, Job.company == ""),
-            or_(Job.description == None, Job.description == ""),
             Job.is_active == True,
+            or_(Job.description == None, Job.description == "", func.length(Job.description) <= 30),
         )
         .all()
     )
-    all_junk = {j.id: j for j in junk_exact + junk_short + junk_category}
-    for j in all_junk.values():
-        j.is_active = False
-    db.commit()
-    logger.info(f"Cleaned up {len(all_junk)} junk jobs")
-    return {"message": f"Deactivated {len(all_junk)} junk jobs", "count": len(all_junk)}
+    all_junk_ids.update(j.id for j in no_desc)
+
+    # 2. Aggregator/blog titles
+    aggregator_patterns = [
+        "%Hiring For jobs%", "%Hiring Full Time jobs%",
+        "%Job In Kenya Jobs%", "Jobs in Kenya%", "Jobs in Nairobi%",
+        "%Trending%Jobs%", "%Latest%Jobs in Kenya%",
+        "%Explore the Trending%", "%Check out the%Jobs%",
+        "%Exciting Trending%", "%Latest In-Demand%",
+        "%Your CV Format%", "Click here to%", "%post comments%",
+    ]
+    for pattern in aggregator_patterns:
+        matches = db.query(Job.id).filter(Job.is_active == True, Job.title.ilike(pattern)).all()
+        all_junk_ids.update(j.id for j in matches)
+
+    # 3. Very short titles
+    short = db.query(Job.id).filter(Job.is_active == True, func.length(Job.title) <= 5).all()
+    all_junk_ids.update(j.id for j in short)
+
+    # 4. Generic category-page titles with no company
+    generic_category = (
+        db.query(Job.id)
+        .filter(
+            Job.is_active == True,
+            Job.title.ilike("% Jobs"),
+            or_(Job.company == None, Job.company == ""),
+        )
+        .all()
+    )
+    all_junk_ids.update(j.id for j in generic_category)
+
+    # Batch deactivate
+    if all_junk_ids:
+        db.query(Job).filter(Job.id.in_(all_junk_ids)).update({"is_active": False}, synchronize_session=False)
+        db.commit()
+
+    logger.info(f"Cleaned up {len(all_junk_ids)} junk jobs")
+    return {"message": f"Deactivated {len(all_junk_ids)} junk jobs", "count": len(all_junk_ids)}
 
 
 @app.get("/api/sources")
