@@ -223,6 +223,17 @@ def list_jobs(
         (Job.application_deadline == None) | (Job.application_deadline >= now)
     )
 
+    # Filter out junk/category-page jobs (not real job postings)
+    junk_titles = [
+        "Jobs", "Manufacturing Jobs", "CNA Jobs", "Bindery Jobs",
+        "College Jobs", "Phlebotomist Jobs", "Various Jobs", "Open Jobs",
+        "Distribution Jobs", "Search Jobs", "Construction Jobs", "CNA - Jobs",
+    ]
+    for jt in junk_titles:
+        query = query.filter(Job.title != jt)
+    # Also filter out very short generic titles that are just category names
+    query = query.filter(func.length(Job.title) > 5)
+
     if search:
         search_filter = f"%{search}%"
         query = query.filter(
@@ -302,6 +313,38 @@ def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
     db.refresh(job)
     logger.info(f"Manual job created: {job.id} - {job.title}")
     return {"message": "Job created", "job_id": job.id}
+
+
+@app.post("/api/jobs/cleanup")
+def cleanup_junk_jobs(db: Session = Depends(get_db)):
+    """Deactivate junk/category-page jobs that aren't real postings (admin)."""
+    from sqlalchemy import or_
+    junk_titles = [
+        "Jobs", "Manufacturing Jobs", "CNA Jobs", "Bindery Jobs",
+        "College Jobs", "Phlebotomist Jobs", "Various Jobs", "Open Jobs",
+        "Distribution Jobs", "Search Jobs", "Construction Jobs", "CNA - Jobs",
+    ]
+    # Exact title matches
+    junk_exact = db.query(Job).filter(Job.title.in_(junk_titles), Job.is_active == True).all()
+    # Very short titles (<=5 chars) that are likely not real
+    junk_short = db.query(Job).filter(func.length(Job.title) <= 5, Job.is_active == True).all()
+    # Titles ending with " Jobs" that have no company and no description (category pages)
+    junk_category = (
+        db.query(Job)
+        .filter(
+            Job.title.ilike("% Jobs"),
+            or_(Job.company == None, Job.company == ""),
+            or_(Job.description == None, Job.description == ""),
+            Job.is_active == True,
+        )
+        .all()
+    )
+    all_junk = {j.id: j for j in junk_exact + junk_short + junk_category}
+    for j in all_junk.values():
+        j.is_active = False
+    db.commit()
+    logger.info(f"Cleaned up {len(all_junk)} junk jobs")
+    return {"message": f"Deactivated {len(all_junk)} junk jobs", "count": len(all_junk)}
 
 
 @app.get("/api/sources")
