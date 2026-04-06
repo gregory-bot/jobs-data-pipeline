@@ -48,6 +48,9 @@ from airflow_home.scrapers.company_careers_scraper import CompanyCareersScraper
 # ----- BambooHR -----
 from airflow_home.scrapers.bamboohr_scraper import BambooHRScraper
 
+# ----- OpenedCareer -----
+from airflow_home.scrapers.openedcareer_scraper import OpenedCareerScraper
+
 from airflow_home.transformers.cleaner import clean_jobs
 
 logging.basicConfig(
@@ -89,6 +92,8 @@ SCRAPER_REGISTRY = {
     "company_careers": CompanyCareersScraper,
     # --- BambooHR company pages ---
     "bamboohr": BambooHRScraper,
+    # --- OpenedCareer (Kenya jobs with direct apply links) ---
+    "openedcareer": OpenedCareerScraper,
 }
 
 
