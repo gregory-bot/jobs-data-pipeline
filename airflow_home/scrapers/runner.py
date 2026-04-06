@@ -45,6 +45,9 @@ from airflow_home.scrapers.workatastartup_scraper import WorkAtAStartupScraper
 # ----- Company Careers Crawler -----
 from airflow_home.scrapers.company_careers_scraper import CompanyCareersScraper
 
+# ----- BambooHR -----
+from airflow_home.scrapers.bamboohr_scraper import BambooHRScraper
+
 from airflow_home.transformers.cleaner import clean_jobs
 
 logging.basicConfig(
@@ -84,6 +87,8 @@ SCRAPER_REGISTRY = {
     "workatastartup": WorkAtAStartupScraper,
     # --- Company career pages (UN, NGOs, banks, tech) ---
     "company_careers": CompanyCareersScraper,
+    # --- BambooHR company pages ---
+    "bamboohr": BambooHRScraper,
 }
 
 
