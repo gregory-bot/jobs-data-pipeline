@@ -32,12 +32,27 @@ app = FastAPI(
 )
 
 # CORS - allow frontend to connect
+# Explicitly list allowed origins for better CORS handling
+ALLOWED_ORIGINS = [
+    "https://annex-careers.netlify.app",
+    "https://www.annex-careers.netlify.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.netlify\.app",  # Allow all Netlify preview deploys
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight response for 10 minutes
 )
 
 
@@ -191,7 +206,14 @@ from fastapi.responses import JSONResponse
 async def generic_exception_handler(request: Request, exc: Exception):
     import traceback
     logger.error(f"Unhandled exception on {request.url}: {exc}\n{traceback.format_exc()}")
-    return JSONResponse(status_code=500, content={"detail": str(exc)})
+    # Get origin from request headers
+    origin = request.headers.get("origin", "")
+    headers = {}
+    # Add CORS headers if origin is allowed
+    if origin in ALLOWED_ORIGINS or origin.endswith(".netlify.app"):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    return JSONResponse(status_code=500, content={"detail": str(exc)}, headers=headers)
 
 
 # --- Endpoints ---
