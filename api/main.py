@@ -36,6 +36,8 @@ app = FastAPI(
 ALLOWED_ORIGINS = [
     "https://annex-careers.netlify.app",
     "https://www.annex-careers.netlify.app",
+    "https://careers.annex-technologies.com",
+    "https://www.careers.annex-technologies.com",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:8080",
