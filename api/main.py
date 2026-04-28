@@ -23,7 +23,11 @@ app = FastAPI(
 # CORS - allow frontend to connect
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
+    allow_origins=[
+        "https://careers.annex-technologies.com",
+        "http://localhost:3000",  # for local development
+        "http://localhost:3001",  # for local development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
