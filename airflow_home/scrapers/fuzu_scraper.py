@@ -121,3 +121,75 @@ class FuzuScraper(BaseScraper):
             source=self.SOURCE_NAME,
             external_id=external_id,
         )
+
+    def _fetch_detail(self, url: str) -> dict:
+        """Fetch full job description from a Fuzu job detail page."""
+        import json
+        soup = self.fetch_page(url)
+        if not soup:
+            return {}
+
+        for tag in soup(["script", "style", "nav", "header", "footer", "aside"]):
+            tag.decompose()
+
+        result = {}
+
+        # --- Try JSON-LD structured data first ---
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                data = json.loads(script.string or "")
+                if isinstance(data, list):
+                    data = data[0]
+                if data.get("@type") in ("JobPosting", "jobPosting"):
+                    result["description"] = data.get("description", "")
+                    result["company"] = (data.get("hiringOrganization") or {}).get("name")
+                    result["job_type"] = data.get("employmentType")
+                    loc = data.get("jobLocation") or {}
+                    if isinstance(loc, dict):
+                        addr = loc.get("address") or {}
+                        result["location"] = addr.get("addressLocality") or addr.get("addressRegion") or "Kenya"
+                    return result
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                continue
+
+        # --- HTML fallback ---
+        main = soup.find("main") or soup.find("article") or soup.body
+        if not main:
+            return result
+
+        description_parts = []
+        requirements_parts = []
+        current_section = None
+
+        for elem in main.find_all(["h1", "h2", "h3", "h4", "p", "ul", "ol"]):
+            tag = elem.name
+            text = elem.get_text(strip=True)
+            if not text:
+                continue
+            if tag in ("h1", "h2", "h3", "h4"):
+                tl = text.lower()
+                if re.search(r"description|summary|about|role", tl):
+                    current_section = "desc"
+                elif re.search(r"requirement|qualification|skills", tl):
+                    current_section = "req"
+                else:
+                    current_section = "other"
+                continue
+            if tag in ("ul", "ol"):
+                items = [li.get_text(strip=True) for li in elem.find_all("li") if li.get_text(strip=True)]
+                if current_section == "req":
+                    requirements_parts.extend(items)
+                else:
+                    description_parts.extend(items)
+                continue
+            if len(text) > 20:
+                if current_section == "req":
+                    requirements_parts.append(text)
+                elif current_section in ("desc", None):
+                    description_parts.append(text)
+
+        if description_parts:
+            result["description"] = "\n".join(description_parts)[:5000]
+        if requirements_parts:
+            result["requirements"] = "\n".join(requirements_parts)[:3000]
+        return result

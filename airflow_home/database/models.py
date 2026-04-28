@@ -27,14 +27,16 @@ class Job(Base):
     salary_min = Column(Float, nullable=True)
     salary_max = Column(Float, nullable=True)
     salary_currency = Column(String(10), nullable=True)
-    job_type = Column(String(50), nullable=True)  # full-time, part-time, contract, etc.
-    experience_level = Column(String(50), nullable=True)  # entry, mid, senior
+    job_type = Column(String(50), nullable=True)
+    experience_level = Column(String(50), nullable=True)
     remote = Column(Boolean, default=False)
     url = Column(String(1000), nullable=True)
     apply_url = Column(String(1000), nullable=True)
-    source = Column(String(100), nullable=False)  # linkedin, myjobsinkenya, etc.
-    tags = Column(Text, nullable=True)  # comma-separated tags/skills
+    source = Column(String(100), nullable=False)
+    tags = Column(Text, nullable=True)
+    requirements = Column(Text, nullable=True)
     posted_date = Column(DateTime, nullable=True)
+    application_deadline = Column(DateTime, nullable=True)
     scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_active = Column(Boolean, default=True)
 
@@ -56,7 +58,7 @@ class ScrapeLog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     source = Column(String(100), nullable=False)
-    status = Column(String(20), nullable=False)  # success, failed, partial
+    status = Column(String(20), nullable=False)
     jobs_found = Column(Integer, default=0)
     jobs_new = Column(Integer, default=0)
     jobs_updated = Column(Integer, default=0)
@@ -66,3 +68,23 @@ class ScrapeLog(Base):
 
     def __repr__(self):
         return f"<ScrapeLog(source='{self.source}', status='{self.status}', jobs_found={self.jobs_found})>"
+
+
+class User(Base):
+    """Subscribers and CV-uploaded users for email campaigns."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(320), nullable=False, unique=True)
+    name = Column(String(300), nullable=True)
+    source = Column(String(50), nullable=False, default="subscribe")  # 'subscribe' or 'cv_upload'
+    job_interests = Column(Text, nullable=True)  # comma-separated interest tags
+    subscribed_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_emailed_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_users_email", "email", unique=True),
+    )
+
+    def __repr__(self):
+        return f"<User(id={self.id}, email='{self.email}', source='{self.source}')>"

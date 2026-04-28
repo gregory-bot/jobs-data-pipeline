@@ -33,8 +33,8 @@ def daily_full_scrape():
     logger.info("DAILY FULL SCRAPE STARTED")
     logger.info("=" * 60)
 
-    from database.connection import init_db
-    from scrapers.runner import run_scraper
+    from airflow_home.database.connection import init_db
+    from airflow_home.scrapers.runner import run_scraper
 
     init_db()
 
@@ -47,6 +47,10 @@ def daily_full_scrape():
         {"source": "fuzu", "max_pages": 5},
         {"source": "google_search", "search_query": "jobs hiring", "location": "Kenya", "max_pages": 2},
         {"source": "adzuna", "search_query": "software", "location": "Kenya", "max_pages": 3},
+        {"source": "jobwebkenya", "max_pages": 5},
+        {"source": "corporatestaffing", "max_pages": 5},
+        {"source": "kenyajob", "max_pages": 5},
+        {"source": "summitrecruitment", "max_pages": 3},
     ]
 
     results = []
@@ -72,7 +76,7 @@ def quick_scrape():
     logger.info("QUICK SCRAPE STARTED")
     logger.info("=" * 60)
 
-    from scrapers.runner import run_all_scrapers
+    from airflow_home.scrapers.runner import run_all_scrapers
 
     results = run_all_scrapers(
         search_query="developer",
@@ -89,8 +93,8 @@ def quick_scrape():
 
 def deactivate_old_jobs():
     """Mark jobs older than 30 days as inactive."""
-    from database.connection import SessionLocal
-    from database.models import Job
+    from airflow_home.database.connection import SessionLocal
+    from airflow_home.database.models import Job
 
     db = SessionLocal()
     try:
@@ -108,8 +112,8 @@ def deactivate_old_jobs():
 
 def log_summary():
     """Log a summary of recent scraping."""
-    from database.connection import SessionLocal
-    from database.models import ScrapeLog
+    from airflow_home.database.connection import SessionLocal
+    from airflow_home.database.models import ScrapeLog
 
     db = SessionLocal()
     try:

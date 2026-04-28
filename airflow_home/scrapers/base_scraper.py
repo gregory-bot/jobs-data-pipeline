@@ -33,7 +33,9 @@ class JobData:
         url: Optional[str] = None,
         apply_url: Optional[str] = None,
         tags: Optional[str] = None,
+        requirements: Optional[str] = None,
         posted_date: Optional[datetime.datetime] = None,
+        application_deadline: Optional[datetime.datetime] = None,
         external_id: Optional[str] = None,
     ):
         self.title = title
@@ -50,7 +52,9 @@ class JobData:
         self.url = url
         self.apply_url = apply_url
         self.tags = tags
+        self.requirements = requirements
         self.posted_date = posted_date
+        self.application_deadline = application_deadline
         self.external_id = external_id
 
     def to_dict(self) -> dict:
@@ -69,7 +73,9 @@ class JobData:
             "url": self.url,
             "apply_url": self.apply_url,
             "tags": self.tags,
+            "requirements": self.requirements,
             "posted_date": self.posted_date,
+            "application_deadline": self.application_deadline,
             "external_id": self.external_id,
         }
 
@@ -79,19 +85,38 @@ class BaseScraper(ABC):
 
     SOURCE_NAME: str = "unknown"
 
+    # Rotating user agents to reduce bot detection
+    _USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    ]
+
     def __init__(self):
+        import random
         self.session = requests.Session()
         self.session.headers.update(
             {
-                "User-Agent": settings.USER_AGENT,
+                "User-Agent": random.choice(self._USER_AGENTS),
                 "Accept-Language": "en-US,en;q=0.9",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
             }
         )
+
+    def _rotate_ua(self):
+        """Rotate user agent between requests to reduce blocking."""
+        import random
+        self.session.headers["User-Agent"] = random.choice(self._USER_AGENTS)
 
     def fetch_page(self, url: str, params: dict = None) -> Optional[BeautifulSoup]:
         """Fetch a page and return parsed HTML."""
         try:
+            self._rotate_ua()
             response = self.session.get(url, params=params, timeout=30)
             response.raise_for_status()
             return BeautifulSoup(response.text, "lxml")
@@ -102,6 +127,7 @@ class BaseScraper(ABC):
     def fetch_json(self, url: str, params: dict = None, headers: dict = None) -> Optional[dict]:
         """Fetch JSON data from an API endpoint."""
         try:
+            self._rotate_ua()
             resp = self.session.get(url, params=params, headers=headers, timeout=30)
             resp.raise_for_status()
             return resp.json()

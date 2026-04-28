@@ -21,8 +21,8 @@ ENV PYTHONPATH="/opt/airflow/airflow_home:${PYTHONPATH}"
 ENV AIRFLOW_HOME="/opt/airflow"
 
 
-# Expose Airflow webserver port for Render
-EXPOSE 8080
+# Expose API port for Render
+EXPOSE 10000
 
 # Default command to run Airflow webserver
 # (You may need to override this in Render to: airflow webserver)
