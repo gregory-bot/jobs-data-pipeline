@@ -24,14 +24,20 @@ class Settings:
             f"?sslmode={self.DB_SSLMODE}"
         )
 
+    # Frontend / Site URLs
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://careers.annex-technologies.com")
+    SITE_URL = os.getenv("SITE_URL", "https://careers.annex-technologies.com")
+    BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
     # Email (SMTP fallback + HTTP email APIs)
     SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER = os.getenv("SMTP_USER", "annexcareerske@gmail.com")
+    SMTP_USER = os.getenv("SMTP_USER", "noreply@careers.annex-technologies.com")
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Annex Careers")
+    EMAIL_FROM_ADDRESS = os.getenv("EMAIL_FROM_ADDRESS", "noreply@careers.annex-technologies.com")
     RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-    EMAIL_FROM = os.getenv("EMAIL_FROM", "Annex Careers <onboarding@resend.dev>")
+    EMAIL_FROM = os.getenv("EMAIL_FROM", "Annex Careers <noreply@careers.annex-technologies.com>")
     BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 
     # Scraper

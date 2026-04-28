@@ -31,11 +31,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS - allow frontend to connect
-# Explicitly list allowed origins for better CORS handling
+# ── CORS — only the production domain + local dev ───────────────────────────
+# Netlify removed: site is now on careers.annex-technologies.com
 ALLOWED_ORIGINS = [
-    "https://annex-careers.netlify.app",
-    "https://www.annex-careers.netlify.app",
     "https://careers.annex-technologies.com",
     "https://www.careers.annex-technologies.com",
     "http://localhost:3000",
@@ -49,12 +47,12 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https://.*\.netlify\.app",  # Allow all Netlify preview deploys
+    # ↓ Removed netlify allow_origin_regex — no longer needed
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=600,  # Cache preflight response for 10 minutes
+    max_age=600,
 )
 
 
@@ -106,12 +104,12 @@ class CreateJobRequest(BaseModel):
     company: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
-    job_type: Optional[str] = None  # Full-time, Part-time, Contract, Internship, Attachment
+    job_type: Optional[str] = None
     experience_level: Optional[str] = None
     remote: bool = False
     apply_url: Optional[str] = None
     tags: Optional[str] = None
-    application_deadline: Optional[str] = None  # ISO date string
+    application_deadline: Optional[str] = None
 
 
 # --- Startup ---
@@ -127,11 +125,11 @@ def scheduled_daily_scrape():
     try:
         results = run_all_scrapers(
             search_query="jobs",
-            location=None,  # Scrape ALL locations, not just Kenya
+            location=None,
             max_pages=3,
         )
         total = sum(r.get("jobs_found", 0) for r in results)
-        logger.info(f"=== DAILY SCRAPE DONE: {total} jobs found from {len(results)} sources ===")
+        logger.info(f"=== DAILY SCRAPE DONE: {total} jobs from {len(results)} sources ===")
     except Exception as e:
         logger.error(f"Scheduled scrape failed: {e}")
 
@@ -139,7 +137,9 @@ def scheduled_daily_scrape():
 def keep_alive_ping():
     """Ping our own health endpoint to prevent Render from sleeping."""
     try:
-        httpx.get("https://jobs-data-pipeline.onrender.com/api/health", timeout=10)
+        # ↓ Updated to production backend URL (set BACKEND_URL env var on Render)
+        backend_url = settings.BACKEND_URL.rstrip("/")
+        httpx.get(f"{backend_url}/api/health", timeout=10)
         logger.debug("Keep-alive ping sent")
     except Exception:
         pass
@@ -148,7 +148,6 @@ def keep_alive_ping():
 @app.on_event("startup")
 def startup():
     init_db()
-    # Migrate: add columns / tables if they don't exist
     from airflow_home.database.connection import engine
     with engine.connect() as conn:
         try:
@@ -158,7 +157,6 @@ def startup():
             conn.execute(text(
                 "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requirements TEXT"
             ))
-            # Create users table
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -174,7 +172,7 @@ def startup():
             logger.info("DB migration: columns/tables ensured")
         except Exception as e:
             logger.warning(f"DB migration note: {e}")
-    # Schedule daily scrape at 2:00 PM EAT (11:00 AM UTC)
+
     scheduler.add_job(
         scheduled_daily_scrape,
         CronTrigger(hour=11, minute=0),  # 11 UTC = 2PM EAT
@@ -183,7 +181,6 @@ def startup():
         replace_existing=True,
         misfire_grace_time=3600,
     )
-    # Keep-alive ping every 10 minutes to prevent Render sleep
     scheduler.add_job(
         keep_alive_ping,
         IntervalTrigger(minutes=10),
@@ -200,7 +197,6 @@ def shutdown():
     scheduler.shutdown(wait=False)
 
 
-# Global exception handler to surface real error messages
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -208,11 +204,9 @@ from fastapi.responses import JSONResponse
 async def generic_exception_handler(request: Request, exc: Exception):
     import traceback
     logger.error(f"Unhandled exception on {request.url}: {exc}\n{traceback.format_exc()}")
-    # Get origin from request headers
     origin = request.headers.get("origin", "")
     headers = {}
-    # Add CORS headers if origin is allowed
-    if origin in ALLOWED_ORIGINS or origin.endswith(".netlify.app"):
+    if origin in ALLOWED_ORIGINS:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
     return JSONResponse(status_code=500, content={"detail": str(exc)}, headers=headers)
@@ -238,68 +232,38 @@ def list_jobs(
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
 ):
-    """List jobs with filtering, search, and pagination."""
     query = db.query(Job).filter(Job.is_active == True)
-
-    # Auto-filter out jobs with expired application deadlines (only when deadline is set)
-    now = datetime.now(timezone.utc).replace(tzinfo=None)  # naive UTC to match DB
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     query = query.filter(
         (Job.application_deadline == None) | (Job.application_deadline >= now)
     )
-
-    # --- QUALITY FILTERS: Only show real, useful job postings ---
-
-    # 1. Must have a description (if we couldn't scrape the details, don't show it)
     query = query.filter(Job.description != None, Job.description != "", func.length(Job.description) > 30)
-
-    # 2. Filter out very short generic titles
     query = query.filter(func.length(Job.title) > 5)
 
-    # 3. Filter out aggregator/blog/search-page titles (regex-like patterns via ILIKE)
     aggregator_patterns = [
-        "%Hiring For jobs%",        # "2000+ Hiring For jobs in Kenya"
-        "%Hiring Full Time jobs%",  # "574 Hiring Full Time jobs"
-        "%Job In Kenya Jobs%",      # "5000+ Job In Kenya Jobs"
-        "Jobs in Kenya%",           # "Jobs in Kenya - Nairobi"
-        "Jobs in Nairobi%",
-        "%Trending%Jobs%",          # "Trending Accounting and Finance Jobs"
-        "%Latest%Jobs in Kenya%",
-        "%Explore the Trending%",
-        "%Check out the%Jobs%",
-        "%Exciting Trending%",
-        "%Latest In-Demand%",
-        "%Your CV Format%",
-        "Click here to%",
-        "%post comments%",
-        "CURRENT%JOBS IN KENYA%",   # "CURRENT MEDIA JOBS IN KENYA 2026"
-        "Current%Jobs in Kenya%",
-        "All jobs |%",              # "All jobs | Jobwebkenya.com"
-        "%Jobs Archive%",           # "Jobs Archive - Page 2 of..."
-        "Jobweb Kenya:%",           # "Jobweb Kenya: Current Jobs..."
-        "%Jobs, Employment%",       # "Kenya HR Jobs, Employment"
-        "%Now Hiring jobs%",        # "Now Hiring jobs in Kenya"
-        "%Immediate jobs in%",      # "77 Immediate jobs in Kenya"
-        "%We Are Hiring jobs%",     # "2000+ We Are Hiring jobs"
-        "%Vacancies jobs in%",      # "120 Vacancies jobs in Kenya"
-        "%Companies Hiring jobs%",  # "203 Companies Hiring jobs"
-        "%Hiring jobs in%",         # general hiring aggregator
-        "%jobs in Kenya (%",        # "5000+ jobs in Kenya (352 new)"
+        "%Hiring For jobs%", "%Hiring Full Time jobs%",
+        "%Job In Kenya Jobs%", "Jobs in Kenya%", "Jobs in Nairobi%",
+        "%Trending%Jobs%", "%Latest%Jobs in Kenya%",
+        "%Explore the Trending%", "%Check out the%Jobs%",
+        "%Exciting Trending%", "%Latest In-Demand%",
+        "%Your CV Format%", "Click here to%", "%post comments%",
+        "CURRENT%JOBS IN KENYA%", "Current%Jobs in Kenya%",
+        "All jobs |%", "%Jobs Archive%", "Jobweb Kenya:%",
+        "%Jobs, Employment%", "%Now Hiring jobs%",
+        "%Immediate jobs in%", "%We Are Hiring jobs%",
+        "%Vacancies jobs in%", "%Companies Hiring jobs%",
+        "%Hiring jobs in%", "%jobs in Kenya (%",
     ]
     for pattern in aggregator_patterns:
         query = query.filter(~Job.title.ilike(pattern))
-
-    # 4. Filter out google_* sources entirely (these are search result pages, not real job posts)
     query = query.filter(~Job.source.ilike("google_%"))
 
     if search:
-        search_filter = f"%{search}%"
+        sf = f"%{search}%"
         query = query.filter(
-            (Job.title.ilike(search_filter))
-            | (Job.company.ilike(search_filter))
-            | (Job.description.ilike(search_filter))
-            | (Job.tags.ilike(search_filter))
+            Job.title.ilike(sf) | Job.company.ilike(sf) |
+            Job.description.ilike(sf) | Job.tags.ilike(sf)
         )
-
     if source:
         query = query.filter(Job.source == source)
     if location:
@@ -309,12 +273,8 @@ def list_jobs(
     if remote is not None:
         query = query.filter(Job.remote == remote)
 
-    # Sorting
     sort_col = getattr(Job, sort_by, Job.scraped_at)
-    if sort_order == "desc":
-        query = query.order_by(desc(sort_col))
-    else:
-        query = query.order_by(sort_col)
+    query = query.order_by(desc(sort_col) if sort_order == "desc" else sort_col)
 
     total = query.count()
     pages = math.ceil(total / per_page) if total > 0 else 1
@@ -322,16 +282,12 @@ def list_jobs(
 
     return PaginatedResponse(
         jobs=[JobResponse.from_orm(j) for j in jobs],
-        total=total,
-        page=page,
-        pages=pages,
-        per_page=per_page,
+        total=total, page=page, pages=pages, per_page=per_page,
     )
 
 
 @app.get("/api/jobs/{job_id}", response_model=JobResponse)
 def get_job(job_id: int, db: Session = Depends(get_db)):
-    """Get a single job by ID."""
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -340,30 +296,20 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/jobs")
 def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
-    """Manually add a job posting (admin)."""
     deadline = None
     if req.application_deadline:
         try:
             deadline = datetime.fromisoformat(req.application_deadline)
         except ValueError:
             pass
-
     job = Job(
-        title=req.title,
-        company=req.company,
-        location=req.location,
-        description=req.description,
-        job_type=req.job_type,
-        experience_level=req.experience_level,
-        remote=req.remote,
-        url=req.apply_url,
-        apply_url=req.apply_url,
-        source="manual",
-        tags=req.tags,
-        application_deadline=deadline,
+        title=req.title, company=req.company, location=req.location,
+        description=req.description, job_type=req.job_type,
+        experience_level=req.experience_level, remote=req.remote,
+        url=req.apply_url, apply_url=req.apply_url, source="manual",
+        tags=req.tags, application_deadline=deadline,
         posted_date=datetime.now(timezone.utc),
-        scraped_at=datetime.now(timezone.utc),
-        is_active=True,
+        scraped_at=datetime.now(timezone.utc), is_active=True,
     )
     db.add(job)
     db.commit()
@@ -374,23 +320,15 @@ def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
 
 @app.post("/api/jobs/cleanup")
 def cleanup_junk_jobs(db: Session = Depends(get_db)):
-    """Deactivate junk/category-page jobs and jobs with no description (admin)."""
     from sqlalchemy import or_
-
     all_junk_ids = set()
-
-    # 1. Jobs with no description at all (scraper couldn't get details)
     no_desc = (
-        db.query(Job.id)
-        .filter(
+        db.query(Job.id).filter(
             Job.is_active == True,
             or_(Job.description == None, Job.description == "", func.length(Job.description) <= 30),
-        )
-        .all()
+        ).all()
     )
     all_junk_ids.update(j.id for j in no_desc)
-
-    # 2. Aggregator/blog titles
     aggregator_patterns = [
         "%Hiring For jobs%", "%Hiring Full Time jobs%",
         "%Job In Kenya Jobs%", "Jobs in Kenya%", "Jobs in Nairobi%",
@@ -408,75 +346,45 @@ def cleanup_junk_jobs(db: Session = Depends(get_db)):
     for pattern in aggregator_patterns:
         matches = db.query(Job.id).filter(Job.is_active == True, Job.title.ilike(pattern)).all()
         all_junk_ids.update(j.id for j in matches)
-
-    # 3. Very short titles
     short = db.query(Job.id).filter(Job.is_active == True, func.length(Job.title) <= 5).all()
     all_junk_ids.update(j.id for j in short)
-
-    # 4. Generic category-page titles with no company
     generic_category = (
-        db.query(Job.id)
-        .filter(
-            Job.is_active == True,
-            Job.title.ilike("% Jobs"),
+        db.query(Job.id).filter(
+            Job.is_active == True, Job.title.ilike("% Jobs"),
             or_(Job.company == None, Job.company == ""),
-        )
-        .all()
+        ).all()
     )
     all_junk_ids.update(j.id for j in generic_category)
-
-    # 5. All google_* sources (search result pages, not real job posts)
     google_junk = db.query(Job.id).filter(Job.is_active == True, Job.source.ilike("google_%")).all()
     all_junk_ids.update(j.id for j in google_junk)
-
-    # Batch deactivate
     if all_junk_ids:
         db.query(Job).filter(Job.id.in_(all_junk_ids)).update({"is_active": False}, synchronize_session=False)
         db.commit()
-
     logger.info(f"Cleaned up {len(all_junk_ids)} junk jobs")
     return {"message": f"Deactivated {len(all_junk_ids)} junk jobs", "count": len(all_junk_ids)}
 
 
 @app.get("/api/sources")
 def list_sources(db: Session = Depends(get_db)):
-    """List all available job sources with counts."""
     results = (
         db.query(Job.source, func.count(Job.id))
-        .filter(Job.is_active == True)
-        .group_by(Job.source)
-        .all()
+        .filter(Job.is_active == True).group_by(Job.source).all()
     )
     return {"sources": {source: count for source, count in results}}
 
 
 @app.get("/api/stats", response_model=StatsResponse)
 def get_stats(db: Session = Depends(get_db)):
-    """Get pipeline statistics."""
     total_jobs = db.query(func.count(Job.id)).scalar()
     active_jobs = db.query(func.count(Job.id)).filter(Job.is_active == True).scalar()
-
-    source_counts = (
-        db.query(Job.source, func.count(Job.id))
-        .group_by(Job.source)
-        .all()
-    )
-
-    recent_logs = (
-        db.query(ScrapeLog)
-        .order_by(desc(ScrapeLog.started_at))
-        .limit(20)
-        .all()
-    )
-
+    source_counts = db.query(Job.source, func.count(Job.id)).group_by(Job.source).all()
+    recent_logs = db.query(ScrapeLog).order_by(desc(ScrapeLog.started_at)).limit(20).all()
     return StatsResponse(
-        total_jobs=total_jobs,
-        active_jobs=active_jobs,
+        total_jobs=total_jobs, active_jobs=active_jobs,
         sources={s: c for s, c in source_counts},
         recent_scrapes=[
             {
-                "source": log.source,
-                "status": log.status,
+                "source": log.source, "status": log.status,
                 "jobs_found": log.jobs_found,
                 "started_at": log.started_at.isoformat() if log.started_at else None,
             }
@@ -492,22 +400,14 @@ def trigger_scrape(
     location: Optional[str] = None,
     max_pages: int = Query(3, ge=1, le=10),
 ):
-    """Manually trigger a scrape for a specific source."""
     from airflow_home.scrapers.runner import run_scraper, SCRAPER_REGISTRY
-
     if source not in SCRAPER_REGISTRY:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown source: {source}. Available: {list(SCRAPER_REGISTRY.keys())}",
-        )
-
-    result = run_scraper(source, search_query=search_query, location=location, max_pages=max_pages)
-    return result
+        raise HTTPException(status_code=400, detail=f"Unknown source: {source}")
+    return run_scraper(source, search_query=search_query, location=location, max_pages=max_pages)
 
 
 @app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
-    """Health check endpoint for monitoring."""
     try:
         db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
@@ -515,23 +415,10 @@ def health_check(db: Session = Depends(get_db)):
         return {"status": "unhealthy", "database": str(e)}
 
 
-# --- Email subscription ---
+# --- Email helpers ---
 
-SITE_URL = "https://annex-careers.netlify.app"
-
-
-class SubscribeRequest(BaseModel):
-    email: EmailStr
-
-
-class UserRegisterRequest(BaseModel):
-    email: EmailStr
-    name: Optional[str] = None
-    job_interests: Optional[str] = None
-
-
-class BulkEmailRequest(BaseModel):
-    user_ids: List[int]
+# ↓ SITE_URL now always resolves to https://careers.annex-technologies.com
+SITE_URL = settings.SITE_URL
 
 
 def build_welcome_email_html(jobs: list, name: str = None) -> str:
@@ -540,14 +427,20 @@ def build_welcome_email_html(jobs: list, name: str = None) -> str:
     job_cards = ""
     for job in jobs:
         location = job.location or "Remote"
-        company = job.company or "—"
+        company  = job.company  or "—"
         job_type = job.job_type or ""
-        job_url = f"{SITE_URL}/jobs/{job.id}"
-        type_badge = f'<span style="display:inline-block;background:#fef2f2;color:#dc2626;font-size:11px;padding:2px 8px;border-radius:12px;margin-top:6px;">{job_type}</span>' if job_type else ""
+        # ↓ Link goes to careers.annex-technologies.com, NOT Netlify
+        job_url  = f"{SITE_URL}/jobs/{job.id}"
+        type_badge = (
+            f'<span style="display:inline-block;background:#fef2f2;color:#dc2626;'
+            f'font-size:11px;padding:2px 8px;border-radius:12px;margin-top:6px;">{job_type}</span>'
+            if job_type else ""
+        )
         job_cards += f"""
         <tr>
           <td style="padding:0 24px 12px;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <table width="100%" cellpadding="0" cellspacing="0"
+              style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
               <tr>
                 <td style="padding:16px 20px;">
                   <a href="{job_url}" style="color:#dc2626;font-size:15px;font-weight:600;text-decoration:none;">{job.title}</a>
@@ -555,7 +448,11 @@ def build_welcome_email_html(jobs: list, name: str = None) -> str:
                   <div style="color:#6b7280;font-size:12px;margin-top:4px;">📍 {location}</div>
                   {type_badge}
                   <div style="margin-top:12px;">
-                    <a href="{job_url}" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:13px;font-weight:500;padding:8px 20px;border-radius:6px;text-decoration:none;">View &amp; Apply</a>
+                    <a href="{job_url}"
+                       style="display:inline-block;background:#dc2626;color:#ffffff;font-size:13px;
+                              font-weight:500;padding:8px 20px;border-radius:6px;text-decoration:none;">
+                      View &amp; Apply
+                    </a>
                   </div>
                 </td>
               </tr>
@@ -568,47 +465,52 @@ def build_welcome_email_html(jobs: list, name: str = None) -> str:
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="background:#dc2626;padding:28px 24px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Annex Careers</h1>
-              <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Your gateway to the best job opportunities</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px 24px 12px;">
-              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">{greeting}</h2>
-              <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
-                Here are the latest job opportunities we think you'll love:
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:20px 24px 12px;">
-              <h3 style="margin:0;color:#dc2626;font-size:16px;font-weight:600;border-bottom:2px solid #dc2626;padding-bottom:8px;">Latest Opportunities</h3>
-            </td>
-          </tr>
-          {job_cards}
-          <tr>
-            <td style="padding:20px 24px 8px;text-align:center;">
-              <a href="{SITE_URL}/jobs" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;font-weight:600;padding:12px 36px;border-radius:8px;text-decoration:none;">Browse All Jobs</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:28px 24px;text-align:center;border-top:1px solid #e5e7eb;margin-top:16px;">
-              <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
-                &copy; {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
-              </p>
-              <p style="margin:0;color:#9ca3af;font-size:11px;">
-                <a href="{SITE_URL}" style="color:#dc2626;text-decoration:none;">Visit website</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0"
+        style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        <tr>
+          <td style="background:#dc2626;padding:28px 24px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Annex Careers</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Your gateway to the best job opportunities</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 24px 12px;">
+            <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">{greeting}</h2>
+            <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
+              Here are the latest job opportunities we think you'll love:
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 24px 12px;">
+            <h3 style="margin:0;color:#dc2626;font-size:16px;font-weight:600;border-bottom:2px solid #dc2626;padding-bottom:8px;">
+              Latest Opportunities
+            </h3>
+          </td>
+        </tr>
+        {job_cards}
+        <tr>
+          <td style="padding:20px 24px 8px;text-align:center;">
+            <a href="{SITE_URL}/jobs"
+               style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;
+                      font-weight:600;padding:12px 36px;border-radius:8px;text-decoration:none;">
+              Browse All Jobs
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 24px;text-align:center;border-top:1px solid #e5e7eb;margin-top:16px;">
+            <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
+              &copy; {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
+            </p>
+            <p style="margin:0;color:#9ca3af;font-size:11px;">
+              <a href="{SITE_URL}" style="color:#dc2626;text-decoration:none;">careers.annex-technologies.com</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>"""
@@ -619,19 +521,25 @@ def build_targeted_email_html(name: str, interest_label: str, jobs: list) -> str
     job_cards = ""
     for job in jobs:
         location = job.location or "Remote"
-        company = job.company or "—"
-        job_url = f"{SITE_URL}/jobs/{job.id}"
+        company  = job.company  or "—"
+        # ↓ Link goes to careers.annex-technologies.com, NOT Netlify
+        job_url  = f"{SITE_URL}/jobs/{job.id}"
         job_cards += f"""
         <tr>
           <td style="padding:0 24px 12px;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <table width="100%" cellpadding="0" cellspacing="0"
+              style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
               <tr>
                 <td style="padding:16px 20px;">
                   <a href="{job_url}" style="color:#dc2626;font-size:15px;font-weight:600;text-decoration:none;">{job.title}</a>
                   <div style="color:#6b7280;font-size:13px;margin-top:4px;">{company}</div>
                   <div style="color:#6b7280;font-size:12px;margin-top:4px;">📍 {location}</div>
                   <div style="margin-top:12px;">
-                    <a href="{job_url}" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:13px;font-weight:500;padding:8px 20px;border-radius:6px;text-decoration:none;">View &amp; Apply</a>
+                    <a href="{job_url}"
+                       style="display:inline-block;background:#dc2626;color:#ffffff;font-size:13px;
+                              font-weight:500;padding:8px 20px;border-radius:6px;text-decoration:none;">
+                      View &amp; Apply
+                    </a>
                   </div>
                 </td>
               </tr>
@@ -644,52 +552,61 @@ def build_targeted_email_html(name: str, interest_label: str, jobs: list) -> str
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="background:#dc2626;padding:28px 24px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Annex Careers</h1>
-              <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Jobs matched to your interests</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px 24px 12px;">
-              <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">Hello {name},</h2>
-              <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
-                Check out jobs applied by other <strong>{interest_label}</strong> professionals like you:
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:20px 24px 12px;">
-              <h3 style="margin:0;color:#dc2626;font-size:16px;font-weight:600;border-bottom:2px solid #dc2626;padding-bottom:8px;">Jobs for {interest_label} Professionals</h3>
-            </td>
-          </tr>
-          {job_cards}
-          <tr>
-            <td style="padding:20px 24px 8px;text-align:center;">
-              <a href="{SITE_URL}/jobs" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;font-weight:600;padding:12px 36px;border-radius:8px;text-decoration:none;">Browse All Jobs</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:28px 24px;text-align:center;border-top:1px solid #e5e7eb;margin-top:16px;">
-              <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
-                &copy; {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0"
+        style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        <tr>
+          <td style="background:#dc2626;padding:28px 24px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">Annex Careers</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Jobs matched to your interests</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 24px 12px;">
+            <h2 style="margin:0 0 8px;color:#111827;font-size:20px;font-weight:700;">Hello {name},</h2>
+            <p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.6;">
+              Check out jobs for <strong>{interest_label}</strong> professionals like you:
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 24px 12px;">
+            <h3 style="margin:0;color:#dc2626;font-size:16px;font-weight:600;border-bottom:2px solid #dc2626;padding-bottom:8px;">
+              Jobs for {interest_label} Professionals
+            </h3>
+          </td>
+        </tr>
+        {job_cards}
+        <tr>
+          <td style="padding:20px 24px 8px;text-align:center;">
+            <a href="{SITE_URL}/jobs"
+               style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;
+                      font-weight:600;padding:12px 36px;border-radius:8px;text-decoration:none;">
+              Browse All Jobs
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 24px;text-align:center;border-top:1px solid #e5e7eb;">
+            <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;">
+              &copy; {datetime.now().year} Annex Careers &bull; Aggregating opportunities from 20+ sources
+            </p>
+            <p style="margin:0;color:#9ca3af;font-size:11px;">
+              <a href="{SITE_URL}" style="color:#dc2626;text-decoration:none;">careers.annex-technologies.com</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>"""
 
 
 def send_email(to_email: str, subject: str, html_body: str):
-    """Send email via Brevo (primary), Resend (secondary), or SMTP (fallback)."""
-    # Primary: Brevo HTTP API (free 300/day, no domain needed, works on Render)
+    """Send via Brevo (primary) → Resend (secondary) → SMTP (fallback)."""
+
+    # ── Primary: Brevo ───────────────────────────────────────────────────────
     if settings.BREVO_API_KEY:
         resp = httpx.post(
             "https://api.brevo.com/v3/smtp/email",
@@ -698,7 +615,11 @@ def send_email(to_email: str, subject: str, html_body: str):
                 "Content-Type": "application/json",
             },
             json={
-                "sender": {"name": settings.EMAIL_FROM_NAME, "email": settings.SMTP_USER},
+                "sender": {
+                    # ↓ Must match the verified domain in Brevo
+                    "name":  settings.EMAIL_FROM_NAME,
+                    "email": settings.EMAIL_FROM_ADDRESS,   # noreply@careers.annex-technologies.com
+                },
                 "to": [{"email": to_email}],
                 "subject": subject,
                 "htmlContent": html_body,
@@ -706,11 +627,11 @@ def send_email(to_email: str, subject: str, html_body: str):
             timeout=15,
         )
         if resp.status_code in (200, 201, 202):
-            logger.info(f"Brevo: sent email to {to_email}")
+            logger.info(f"Brevo: sent to {to_email}")
             return
         logger.warning(f"Brevo failed ({resp.status_code}): {resp.text}")
 
-    # Secondary: Resend HTTP API
+    # ── Secondary: Resend ────────────────────────────────────────────────────
     if settings.RESEND_API_KEY:
         resp = httpx.post(
             "https://api.resend.com/emails",
@@ -719,128 +640,120 @@ def send_email(to_email: str, subject: str, html_body: str):
                 "Content-Type": "application/json",
             },
             json={
-                "from": settings.EMAIL_FROM,
-                "to": [to_email],
+                "from":    settings.EMAIL_FROM,   # "Annex Careers <noreply@careers.annex-technologies.com>"
+                "to":      [to_email],
                 "subject": subject,
-                "html": html_body,
+                "html":    html_body,
             },
             timeout=15,
         )
         if resp.status_code in (200, 201):
-            logger.info(f"Resend: sent email to {to_email}")
+            logger.info(f"Resend: sent to {to_email}")
             return
         logger.warning(f"Resend failed ({resp.status_code}): {resp.text}")
 
-    # Fallback: SMTP (won't work on Render free tier but works locally)
+    # ── Fallback: SMTP ───────────────────────────────────────────────────────
     if settings.SMTP_USER and settings.SMTP_PASSWORD:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.SMTP_USER}>"
-        msg["To"] = to_email
+        msg["From"]    = f"{settings.EMAIL_FROM_NAME} <{settings.SMTP_USER}>"
+        msg["To"]      = to_email
         msg.attach(MIMEText(html_body, "html"))
-
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
             server.ehlo()
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.sendmail(settings.SMTP_USER, [to_email], msg.as_string())
-        logger.info(f"SMTP: sent email to {to_email}")
+        logger.info(f"SMTP: sent to {to_email}")
         return
 
-    raise RuntimeError("No email provider configured (set BREVO_API_KEY, RESEND_API_KEY, or SMTP_PASSWORD)")
+    raise RuntimeError("No email provider configured (BREVO_API_KEY, RESEND_API_KEY, or SMTP_PASSWORD)")
 
 
 def send_email_background(to_email: str, subject: str, html_body: str):
-    """Fire-and-forget email sending in a background thread."""
+    """Fire-and-forget email in a background thread."""
     def _send():
         try:
             send_email(to_email, subject, html_body)
-            logger.info(f"Sent email to {to_email}")
         except Exception as e:
             logger.error(f"Failed to send email to {to_email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 
 def _save_user(db: Session, email: str, name: str = None, source: str = "subscribe", job_interests: str = None):
-    """Upsert a user into the users table."""
     existing = db.query(User).filter(User.email == email).first()
     if existing:
-        if name:
-            existing.name = name
-        if source == "cv_upload":
-            existing.source = "cv_upload"
-        if job_interests:
-            existing.job_interests = job_interests
-        db.commit()
-        db.refresh(existing)
+        if name:            existing.name = name
+        if source == "cv_upload": existing.source = "cv_upload"
+        if job_interests:   existing.job_interests = job_interests
+        db.commit(); db.refresh(existing)
         return existing
     user = User(email=email, name=name, source=source, job_interests=job_interests)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    db.add(user); db.commit(); db.refresh(user)
     return user
+
+
+# --- Subscription / User endpoints ---
+
+class SubscribeRequest(BaseModel):
+    email: EmailStr
+
+class UserRegisterRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    job_interests: Optional[str] = None
+
+class BulkEmailRequest(BaseModel):
+    user_ids: List[int]
 
 
 @app.post("/api/subscribe")
 def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
-    """Subscribe to job alerts — saves user and sends welcome email in background."""
-    if not settings.RESEND_API_KEY and not settings.BREVO_API_KEY and (not settings.SMTP_USER or not settings.SMTP_PASSWORD):
+    if not settings.BREVO_API_KEY and not settings.RESEND_API_KEY and not settings.SMTP_PASSWORD:
         raise HTTPException(status_code=503, detail="Email service not configured")
 
-    # Save subscriber to DB
     _save_user(db, email=req.email, source="subscribe")
 
-    # Fetch 5 recent active jobs for the email
     featured_jobs = (
-        db.query(Job)
-        .filter(Job.is_active == True)
-        .order_by(desc(Job.scraped_at))
-        .limit(5)
-        .all()
+        db.query(Job).filter(Job.is_active == True)
+        .order_by(desc(Job.scraped_at)).limit(5).all()
     )
-
     html = build_welcome_email_html(featured_jobs)
-    # Send in background so the response returns instantly
-    send_email_background(req.email, "Welcome to Annex Careers - Here are today's top opportunities", html)
-
+    send_email_background(
+        req.email,
+        "Welcome to Annex Careers — Here are today's top opportunities",
+        html,
+    )
     return {"message": "Subscribed! Welcome email is on its way."}
 
 
 @app.post("/api/users/register")
 def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
-    """Register a user from CV upload — saves email, name, interests and sends targeted email."""
     user = _save_user(db, email=req.email, name=req.name, source="cv_upload", job_interests=req.job_interests)
 
-    # Send targeted email if interests provided
-    if req.job_interests and (settings.BREVO_API_KEY or settings.RESEND_API_KEY or (settings.SMTP_USER and settings.SMTP_PASSWORD)):
+    if req.job_interests and (settings.BREVO_API_KEY or settings.RESEND_API_KEY or settings.SMTP_PASSWORD):
         from sqlalchemy import or_
-        interest_keywords = [kw.strip().lower() for kw in req.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
-        if not interest_keywords:
-            interest_keywords = [req.job_interests.strip().lower()]
+        keywords = [kw.strip().lower() for kw in req.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
+        if not keywords:
+            keywords = [req.job_interests.strip().lower()]
         filters = []
-        for kw in interest_keywords:
+        for kw in keywords:
             filters.append(Job.title.ilike(f"%{kw}%"))
             filters.append(Job.description.ilike(f"%{kw}%"))
-        matched_jobs = (
-            db.query(Job)
-            .filter(Job.is_active == True)
-            .filter(or_(*filters))
-            .order_by(desc(Job.scraped_at))
-            .limit(5)
-            .all()
+        matched = (
+            db.query(Job).filter(Job.is_active == True)
+            .filter(or_(*filters)).order_by(desc(Job.scraped_at)).limit(5).all()
         )
-        # Fallback to latest jobs if no keyword matches
-        if not matched_jobs:
-            matched_jobs = (
-                db.query(Job)
-                .filter(Job.is_active == True)
-                .order_by(desc(Job.scraped_at))
-                .limit(5)
-                .all()
-            )
+        if not matched:
+            matched = db.query(Job).filter(Job.is_active == True).order_by(desc(Job.scraped_at)).limit(5).all()
+
         interest_label = req.job_interests.title()
-        html = build_targeted_email_html(req.name or "there", interest_label, matched_jobs)
-        send_email_background(req.email, f"Hey {req.name or 'there'}, jobs for {interest_label} professionals like you - Annex Careers", html)
+        html = build_targeted_email_html(req.name or "there", interest_label, matched)
+        send_email_background(
+            req.email,
+            f"Hey {req.name or 'there'} — jobs for {interest_label} professionals · Annex Careers",
+            html,
+        )
         user.last_emailed_at = datetime.now(timezone.utc)
         db.commit()
 
@@ -848,11 +761,7 @@ def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/users")
-def list_users(
-    source: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    """List all registered users (admin)."""
+def list_users(source: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(User).order_by(desc(User.subscribed_at))
     if source:
         query = query.filter(User.source == source)
@@ -860,11 +769,8 @@ def list_users(
     return {
         "users": [
             {
-                "id": u.id,
-                "email": u.email,
-                "name": u.name,
-                "source": u.source,
-                "job_interests": u.job_interests,
+                "id": u.id, "email": u.email, "name": u.name,
+                "source": u.source, "job_interests": u.job_interests,
                 "subscribed_at": u.subscribed_at.isoformat() if u.subscribed_at else None,
                 "last_emailed_at": u.last_emailed_at.isoformat() if u.last_emailed_at else None,
             }
@@ -876,80 +782,54 @@ def list_users(
 
 @app.post("/api/users/send-alerts")
 def send_bulk_alerts(req: BulkEmailRequest, db: Session = Depends(get_db)):
-    """Send daily job alert emails to selected users (admin trigger)."""
-    if not settings.BREVO_API_KEY and not settings.RESEND_API_KEY and (not settings.SMTP_USER or not settings.SMTP_PASSWORD):
+    if not settings.BREVO_API_KEY and not settings.RESEND_API_KEY and not settings.SMTP_PASSWORD:
         raise HTTPException(status_code=503, detail="Email service not configured")
 
     users = db.query(User).filter(User.id.in_(req.user_ids)).all()
     if not users:
         raise HTTPException(status_code=404, detail="No users found")
 
-    featured_jobs = (
-        db.query(Job)
-        .filter(Job.is_active == True)
-        .order_by(desc(Job.scraped_at))
-        .limit(5)
-        .all()
+    featured = (
+        db.query(Job).filter(Job.is_active == True)
+        .order_by(desc(Job.scraped_at)).limit(5).all()
     )
-
-    sent_count = 0
+    sent = 0
     for user in users:
-        # If user has interests, send targeted; otherwise send general
         if user.job_interests:
             from sqlalchemy import or_
-            interest_keywords = [kw.strip().lower() for kw in user.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
-            if not interest_keywords:
-                interest_keywords = [user.job_interests.strip().lower()]
-            filters = []
-            for kw in interest_keywords:
-                filters.append(Job.title.ilike(f"%{kw}%"))
-                filters.append(Job.description.ilike(f"%{kw}%"))
+            keywords = [kw.strip().lower() for kw in user.job_interests.replace(",", " ").split() if len(kw.strip()) > 2]
+            if not keywords:
+                keywords = [user.job_interests.strip().lower()]
+            filters = [Job.title.ilike(f"%{kw}%") for kw in keywords] + [Job.description.ilike(f"%{kw}%") for kw in keywords]
             matched = (
-                db.query(Job)
-                .filter(Job.is_active == True)
-                .filter(or_(*filters))
-                .order_by(desc(Job.scraped_at))
-                .limit(5)
-                .all()
+                db.query(Job).filter(Job.is_active == True)
+                .filter(or_(*filters)).order_by(desc(Job.scraped_at)).limit(5).all()
             )
-            jobs_to_send = matched if matched else featured_jobs
+            jobs_to_send   = matched if matched else featured
             interest_label = user.job_interests.title()
-            html = build_targeted_email_html(user.name or "there", interest_label, jobs_to_send)
-            subject = f"Jobs for {interest_label} professionals - Annex Careers"
+            html    = build_targeted_email_html(user.name or "there", interest_label, jobs_to_send)
+            subject = f"Jobs for {interest_label} professionals — Annex Careers"
         else:
-            html = build_welcome_email_html(featured_jobs, name=user.name)
-            subject = "Your Daily Job Alerts - Annex Careers"
+            html    = build_welcome_email_html(featured, name=user.name)
+            subject = "Your Daily Job Alerts — Annex Careers"
 
         send_email_background(user.email, subject, html)
         user.last_emailed_at = datetime.now(timezone.utc)
-        sent_count += 1
+        sent += 1
 
     db.commit()
-    return {"message": f"Sending emails to {sent_count} users", "sent": sent_count}
+    return {"message": f"Sending emails to {sent} users", "sent": sent}
 
 
 @app.get("/api/scrape-logs")
-def get_scrape_logs(
-    limit: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db),
-):
-    """Get recent scrape logs for admin dashboard."""
-    logs = (
-        db.query(ScrapeLog)
-        .order_by(desc(ScrapeLog.started_at))
-        .limit(limit)
-        .all()
-    )
+def get_scrape_logs(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)):
+    logs = db.query(ScrapeLog).order_by(desc(ScrapeLog.started_at)).limit(limit).all()
     return {
         "logs": [
             {
-                "id": log.id,
-                "source": log.source,
-                "status": log.status,
-                "jobs_found": log.jobs_found,
-                "jobs_new": log.jobs_new,
-                "jobs_updated": log.jobs_updated,
-                "error_message": log.error_message,
+                "id": log.id, "source": log.source, "status": log.status,
+                "jobs_found": log.jobs_found, "jobs_new": log.jobs_new,
+                "jobs_updated": log.jobs_updated, "error_message": log.error_message,
                 "started_at": log.started_at.isoformat() if log.started_at else None,
                 "finished_at": log.finished_at.isoformat() if log.finished_at else None,
             }
@@ -961,17 +841,12 @@ def get_scrape_logs(
 
 @app.get("/api/scheduler")
 def scheduler_status():
-    """Check scheduler status and next run time."""
     jobs = scheduler.get_jobs()
     return {
         "running": scheduler.running,
         "jobs": [
-            {
-                "id": job.id,
-                "name": job.name,
-                "next_run": str(job.next_run_time) if job.next_run_time else None,
-            }
-            for job in jobs
+            {"id": j.id, "name": j.name, "next_run": str(j.next_run_time) if j.next_run_time else None}
+            for j in jobs
         ],
     }
 
@@ -982,11 +857,6 @@ def trigger_full_scrape(
     location: Optional[str] = Query("Kenya"),
     max_pages: int = Query(3, ge=1, le=10),
 ):
-    """Manually trigger a scrape across all sources."""
     from airflow_home.scrapers.runner import run_all_scrapers
-    results = run_all_scrapers(
-        search_query=search_query,
-        location=location,
-        max_pages=max_pages,
-    )
+    results = run_all_scrapers(search_query=search_query, location=location, max_pages=max_pages)
     return {"results": results, "total_found": sum(r.get("jobs_found", 0) for r in results)}
